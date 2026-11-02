@@ -460,7 +460,7 @@ const DATALISTS = {
 
 /* ================= Réglages et profilés (V2) ================= */
 const SET_DEF = {
-  validite:"30",
+  validite:"30", margeDef:"0",
   conditions:"Devis valable {validite} jours à compter de sa date.\nPrix en euros hors taxes, TVA au taux en vigueur.\nTout travail non prévu au présent devis fera l’objet d’un avenant.",
   tauxCharge:"", margeMin:"20", lu:"1", visM2:"5", hJour:"8", relanceJ:"7", ventLevage:"50",
   echeancier:[["À la commande","30"],["À la livraison des matériaux","40"],["À la réception des travaux","30"]],
@@ -838,7 +838,7 @@ function sectionsOf(o){
 }
 function staticLine(ln){ return {key:ln.id, label:ln.label, unit:ln.nu || ln.unit, auto: ln.f ? (Q => Q[ln.f]||0) : null, list:ln.list, data:ln, dyn:false, stored:ln}; }
 function lineLabel(L){ return typeof L.label==="function" ? L.label() : (L.dyn ? L.label : L.data.label); }
-const MARGE_DEF = 30;
+function margeDef(){ return num(S("margeDef")); }
 const AUTO_UNITS = ["m²","ml","u"];
 /* Sources de quantité proposées selon l'unité (prises dans les dimensions de l'ouvrage) */
 function baseOptions(o, unit){
@@ -898,7 +898,7 @@ function lineCalc(L, Q){
   const mqty = has(d.mqty) ? num(d.mqty) : (mqAuto||0);
   const mpuAuto = has(cat.mpu) ? num(cat.mpu) : null;
   const mpu = has(d.mpu) ? num(d.mpu) : (mpuAuto||0);
-  const chute = num(d.chute), marge = has(d.marge) ? num(d.marge) : MARGE_DEF, k = 1 + marge/100;
+  const chute = num(d.chute), marge = has(d.marge) ? num(d.marge) : margeDef(), k = 1 + marge/100;
   const qtyCh = qty*(1+chute/100);
   const mat = d.off ? 0 : qtyCh*pu*k;
   const mo = d.off ? 0 : mqty*mpu;
@@ -1202,7 +1202,7 @@ function renderLine(dv, o, s, L){
       <label><span>Unité</span><select data-u="unit">${opts(UNITS, "")}</select></label>
       ${autoField("pu","PU fourn. HT €","à demander")}
       <label><span>Chutes %</span><input data-p="chute" inputmode="decimal" class="num" value="${esc(d.chute)}" placeholder="0"></label>
-      <label><span>Marge %</span><input data-p="marge" inputmode="decimal" class="num" value="${esc(d.marge)}" placeholder="${MARGE_DEF}"></label>
+      <label><span>Marge %</span><input data-p="marge" inputmode="decimal" class="num" value="${esc(d.marge)}" placeholder="${fmtQ(margeDef())}"></label>
       ${autoField("mqty","Qté pose","à saisir")}
       <label><span>Unité pose</span><select data-u="munit">${opts(UNITS, "")}</select></label>
       ${autoField("mpu","Prix pose HT €","à saisir")}
@@ -1321,12 +1321,14 @@ function renderCatalog(main){
   const head = el(`<section class="card"><h2>Prix fourniture et pose</h2>
     <p class="muted small" style="margin:0 0 10px">Indiquez ici le prix unitaire HT de la fourniture et de la main-d’œuvre de chaque poste, avec leur unité. Les devis reprennent ces valeurs automatiquement. Sur une ligne de devis, vous pouvez toujours taper un autre prix ; le bouton « auto » revient au prix d’ici.</p>
     <div class="row" style="margin-bottom:10px"><button class="btn" type="button" data-a="exp">Exporter la liste de prix (.json)</button><button class="btn" type="button" data-a="imp">Importer une liste de prix</button></div>
+    <div class="row" style="margin:0 0 10px;align-items:flex-end"><label class="f" style="width:200px"><span>Marge par défaut %</span><input id="margeDef" inputmode="decimal" class="num" value="${esc(has((DB.settings||{}).margeDef)?DB.settings.margeDef:"0")}"></label><span class="muted small" style="flex:1 1 200px">S’applique aux matériaux de toutes les lignes de tous les devis, sauf celles où vous avez écrit une marge à la main. À 0, aucune marge.</span></div>
     <input id="catSearch" type="search" placeholder="Rechercher un poste…"></section>`);
   head.addEventListener("click", e => {
     const a = e.target.dataset && e.target.dataset.a;
     if(a==="exp"){ download("endgo-prix-"+today()+".json", JSON.stringify({type:"endgo-prix", date:today(), catalog:DB.catalog, custom:DB.lib.custom}, null, 1), "application/json"); toast("Liste de prix téléchargée"); }
     if(a==="imp") $("#importPrix").click();
   });
+  $("#margeDef", head).addEventListener("input", e => { DB.settings = DB.settings || {}; DB.settings.margeDef = e.target.value; save(); });
   main.appendChild(head);
   main.appendChild(settingsCard());
   const boxes = [];
