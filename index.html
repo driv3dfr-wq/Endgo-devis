@@ -229,6 +229,18 @@ canvas.pad{width:100%;height:auto;display:block;background:#fff;border-radius:10
 .hist div{display:grid;grid-template-columns:86px 1fr;gap:8px}
 .fline{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-top:3px;font-weight:400}
 .fb{background:none;border:1px solid var(--line);color:var(--soft);border-radius:8px;padding:2px 8px;font-size:.72rem;cursor:pointer}
+.tube{border:1px solid var(--line);border-radius:12px;padding:10px}
+.pdfrev{display:flex;flex-direction:column;gap:10px}
+.pdfrev .sub{margin:6px 0 0}
+.pdfl{border:1px solid var(--line);border-radius:12px;padding:10px;margin-bottom:8px;display:flex;flex-direction:column;gap:6px}
+.pdfl.off{opacity:.5}
+.pdfl textarea{min-height:38px;resize:vertical;flex:1 1 auto;min-width:0;width:auto}
+.pdfl input[type=checkbox],.chk input[type=checkbox]{width:22px;height:22px;flex:0 0 auto;margin:8px 0 0}
+.chk input[type=checkbox]{margin:0}
+.pdfl .x{background:none;border:none;color:var(--soft);cursor:pointer;font-size:1rem;padding:6px}
+.pdfg{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}
+@media (max-width:520px){.pdfg{grid-template-columns:1fr 1fr}}
+.chk{display:flex;gap:8px;align-items:center;font-size:.9rem}
 .frow{display:grid;grid-template-columns:1fr auto auto 28px;gap:8px;align-items:center;padding:8px 0;border-bottom:1px dashed var(--line)}
 .frow.add{grid-template-columns:1.4fr 1fr 1.2fr auto;border:none}
 @media (max-width:560px){.frow.add{grid-template-columns:1fr 1fr}}
@@ -323,7 +335,7 @@ details>summary::before{content:"▸ ";color:var(--accent)}details[open]>summary
 <datalist id="dl-pannes"></datalist>
 <datalist id="dl-bac"></datalist>
 <datalist id="dl-panneau"></datalist>
-<datalist id="dl-traitement"></datalist>
+<datalist id="dl-traitement"></datalist><datalist id="dl-tubes"></datalist>
 
 <script>
 "use strict";
@@ -349,6 +361,7 @@ const TYPES = {
   escalier:{label:"Escalier (à définir)",geo:"none",sections:["escalier","commun"]},
   portail:{label:"Portail / clôture",geo:"cloture",sections:["portail","commun"]},
   soustraite:{label:"Bâtiment sous-traité",geo:"plan",sections:["soustraite"]},
+  metal:{label:"Métallerie : tubes (chariot, cadre, petit ouvrage)",geo:"tubes",sections:["tubes","metalMo","commun"]},
   autre:{label:"Autre",geo:"plan",sections:["libre","commun"]}
 };
 
@@ -413,6 +426,13 @@ const TPL = {
     ["Portillon","u","nbPortillons"],
     ["Motorisation","u",null]]},
   soustraite:{title:"Bâtiment sous-traité",lines:[["Bâtiment sous-traité","forfait","one"]]},
+  tubes:{title:"Tubes et profilés",lines:[]},
+  metalMo:{title:"Main-d’œuvre et accessoires",lines:[
+    ["Découpe et préparation","h",null,null,false,"mo"],
+    ["Soudure et assemblage","h",null,null,false,"mo"],
+    ["Meulage et finition","h",null,null,false,"mo"],
+    ["Peinture / thermolaquage","forfait","one",null,true],
+    ["Accessoires : roues, platines, visserie","u",null,null,true]]},
   libre:{title:"Postes",lines:[]},
   commun:{title:"Postes communs",lines:[
     ["Études / plans / note de calcul","forfait","one"],
@@ -434,7 +454,8 @@ const DATALISTS = {
   pannes:[].concat([140,160,180,200,225,250,300].map(n=>"Z "+n),[140,160,180,200,225,250,300].map(n=>"C "+n),[100,120,140,160,180,200].map(n=>"IPE "+n)),
   bac:["Bac acier 0,63 mm","Bac acier 0,75 mm","Bac acier 1000 T","Bac acier 1040 T","Bac acier anti-condensation 0,75 mm","Bac acier prélaqué RAL","Tôle sèche anticondensation","Tôle sèche sans anticondensation","Tôle sèche simple"],
   panneau:[40,60,80,100,120,150].map(n=>"Panneau sandwich "+n+" mm").concat([100,120,150,200].map(n=>"Panneau frigo "+n+" mm")),
-  traitement:["Galvanisation à chaud","Primaire antirouille","Peinture RAL","Thermolaquage RAL"]
+  traitement:["Galvanisation à chaud","Primaire antirouille","Peinture RAL","Thermolaquage RAL"],
+  tubes:["Tube carré 20×20×2","Tube carré 25×25×2","Tube carré 30×30×2","Tube carré 40×40×2","Tube carré 40×40×3","Tube carré 50×50×3","Tube carré 60×60×3","Tube carré 80×80×4","Tube rectangulaire 40×20×2","Tube rectangulaire 50×30×2","Tube rectangulaire 60×40×3","Tube rectangulaire 80×40×3","Tube rectangulaire 100×50×4","Tube rond Ø26,9×2,6","Tube rond Ø33,7×2,6","Tube rond Ø42,4×2,6","Tube rond Ø48,3×3","Fer plat 30×5","Fer plat 40×5","Fer plat 50×8","Cornière 30×30×3","Cornière 40×40×4","Fer carré plein 12","Fer rond plein Ø12"]
 };
 
 /* ================= Réglages et profilés (V2) ================= */
@@ -705,11 +726,12 @@ function newOuvrage(type, n){
     hauvents:[], ouv:[], fumi:{on:false,q:"1"}, sec:{}, dyn:{}};
   buildSections(o); return o;
 }
-function mkLine(t){ return {id:uid(), label:t[0], tpl:t[0], nu:t[1], unit:t[1], f:t[2]||null, list:t[3]||null, off:!!t[4], ref:"", qty:"", pu:"", chute:"", marge:""}; }
+function mkLine(t){ return {id:uid(), label:t[0], tpl:t[0], nu:t[1], unit:t[1], f:t[2]||null, list:t[3]||null, off:!!t[4], ref:"", qty:"", pu:t[5]==="mo"?"0":"", chute:"", marge:""}; }
 function buildSections(o){
   const keepCommun = o.sec.commun;
   o.sec = {};
   TYPES[o.type].sections.forEach(k => { o.sec[k] = (k==="commun" && keepCommun) ? keepCommun : TPL[k].lines.map(mkLine); });
+  if(o.type==="metal" && o.sec.commun) o.sec.commun.forEach(ln => { if(!/Fournitures diverses/.test(ln.tpl||"") && !has(ln.pu) && !has(ln.qty)) ln.off = true; });
 }
 function dynData(o, key, def){
   if(!o.dyn[key]) o.dyn[key] = Object.assign({ref:"",qty:"",pu:"",chute:"",marge:"",off:false,unit:def.unit}, {});
@@ -799,6 +821,10 @@ function sectionsOf(o){
     let lines = o.sec[k].map(ln => staticLine(ln));
     if(k==="couverture" && o.fumi.on){
       lines.push({key:"fumi", ckey:"couverture|Fumidôme / exutoire", label:"Fumidôme / exutoire", unit:"u", auto:()=>num(o.fumi.q), data:dynData(o,"fumi",{unit:"u"}), dyn:true});
+    }
+    if(k==="tubes"){
+      o.tubes = o.tubes || [];
+      lines = o.tubes.map(x => ({key:"tube_"+x.id, ckey:"tubes|"+(has(x.sec)?x.sec.trim():"Tube"), label:()=>has(x.sec)?x.sec.trim():"Tube (section à indiquer)", unit:"ml", auto:()=>tubeCalc(x).ml, list:"tubes", data:dynData(o,"tube_"+x.id,{unit:"ml"}), dyn:true})).concat(lines);
     }
     if(k==="ouvertures"){
       const dl = o.ouv.map(x => ({key:"ouv_"+x.id, ckey:"ouvertures|"+OUV_TYPES[x.type], label:()=>OUV_TYPES[x.type]+" "+fmtQ(num(x.w))+" × "+fmtQ(num(x.h))+" m", unit:"u", auto:()=>num(x.q), data:dynData(o,"ouv_"+x.id,{unit:"u"}), dyn:true}));
@@ -907,6 +933,7 @@ function dimText(o, Q){
   if(g==="plan") return `${fmtQ(num(d.L))} × ${fmtQ(num(d.l))} m`;
   if(g==="lin") return `${fmtQ(num(d.gcL))} ml, H ${fmtQ(num(d.gcH))} m`;
   if(g==="cloture") return `${fmtQ(num(d.clotL))} ml, ${fmtQ(num(d.nbPortails))} portail(s), ${fmtQ(num(d.nbPortillons))} portillon(s)`;
+  if(g==="tubes"){ const t = o.tubes||[]; return `${t.length} tube(s), ${fmtQ(t.reduce((a,x) => a + tubeCalc(x).ml, 0))} ml`; }
   return "";
 }
 
@@ -919,16 +946,17 @@ function renderDevis(main){
   const pick = el(`<section class="card"><div class="row">
     <label class="f" style="flex:1 1 260px"><span>Devis</span><select id="dpick">${DB.devis.length?"":'<option value="">Aucun devis</option>'}${
       DB.devis.slice().reverse().map(d => `<option value="${d.id}" ${dv&&d.id===dv.id?"selected":""}>${esc(d.num)} · ${esc(clientName(getClient(d.clientId))||"Sans client")}${d.titre?" · "+esc(d.titre):""} · ${esc(d.statut)}</option>`).join("")}</select></label>
-    <div class="row" style="align-self:flex-end"><button class="btn primary" data-a="new" type="button">+ Nouveau devis</button>${dv?'<button class="btn" data-a="dup" type="button">Dupliquer</button><button class="btn ghost danger" data-a="del" type="button">Supprimer</button>':""}</div></div></section>`);
+    <div class="row" style="align-self:flex-end"><button class="btn primary" data-a="new" type="button">+ Nouveau devis</button><button class="btn blue" data-a="pdf" type="button">Importer un PDF</button>${dv?'<button class="btn" data-a="dup" type="button">Dupliquer</button><button class="btn ghost danger" data-a="del" type="button">Supprimer</button>':""}</div></div></section>`);
   $("#dpick", pick).addEventListener("change", e => { DB.ui.devisId = e.target.value; save(); render(); });
   pick.addEventListener("click", e => {
     const a = e.target.dataset && e.target.dataset.a; if(!a) return;
     if(a==="new") newDevis("");
+    if(a==="pdf") pdfPick();
     if(a==="dup"){ const c = JSON.parse(JSON.stringify(dv)); c.id=uid(); c.num=nextNum(); c.statut="Brouillon"; c.date=today(); c.checklist=null; c.signature=null; c.chantier=null; c.log=[]; c.dates={}; c.relanceNext=null; DB.devis.push(c); DB.ui.devisId=c.id; saveNow(); render(); toast("Copie créée : "+c.num); }
     if(a==="del") confirmBox(`Supprimer le devis ${dv.num} et sa check-list ?`, "Supprimer", () => { mediaOf(dv).forEach(k => MEDIA.del(k).catch(()=>{})); DB.devis = DB.devis.filter(x=>x.id!==dv.id); DB.ui.devisId = DB.devis.length?DB.devis[DB.devis.length-1].id:null; saveNow(); render(); toast("Devis supprimé"); });
   });
   main.appendChild(pick);
-  if(!dv){ main.appendChild(el(`<div class="card empty">Aucun devis ouvert. Touchez « + Nouveau devis », ou créez-le depuis un client.</div>`)); return; }
+  if(!dv){ main.appendChild(el(`<div class="card empty">Aucun devis ouvert. Touchez « + Nouveau devis », « Importer un PDF » (devis d’un fournisseur), ou créez-le depuis un client.</div>`)); return; }
 
   // en-tête
   const head = el(`<section class="card"><h2>Devis ${esc(dv.num)}</h2><div class="grid">
@@ -1004,6 +1032,7 @@ function cloneOuvrage(o){
   const remap = {};
   c.hauvents.forEach(h => { const n=uid(); remap["hv_"+h.id]="hv_"+n; h.id=n; });
   c.ouv.forEach(x => { const n=uid(); remap["ouv_"+x.id]="ouv_"+n; x.id=n; });
+  (c.tubes||[]).forEach(x => { const n=uid(); remap["tube_"+x.id]="tube_"+n; x.id=n; });
   const dyn = {}; Object.entries(c.dyn).forEach(([k,v]) => { let nk=k; Object.entries(remap).forEach(([a,b])=>{ if(nk.startsWith(a)) nk=b+nk.slice(a.length); }); dyn[nk]=v; }); c.dyn = dyn;
   const sec = {}; Object.entries(c.sec).forEach(([k,v]) => { sec[remap[k]||k] = v.map(ln => Object.assign(ln,{id:uid()})); }); c.sec = sec;
   return c;
@@ -1068,14 +1097,16 @@ function renderOuvrage(dv, o, idx){
   else if(g==="plan"){ dims += numField("Longueur (m)", d.L, "L") + numField("Largeur (m)", d.l, "l"); }
   else if(g==="lin"){ dims += numField("Longueur (ml)", d.gcL, "gcL") + numField("Hauteur (m)", d.gcH, "gcH"); }
   else if(g==="cloture"){ dims += numField("Longueur de clôture (ml)", d.clotL, "clotL") + numField("Portails (nombre)", d.nbPortails, "nbPortails") + numField("Portillons (nombre)", d.nbPortillons, "nbPortillons"); }
+  else if(g==="tubes") dims = `<p class="muted small" style="margin:0;grid-column:1/-1">Ajoutez chaque tube : sa section, puis les longueurs à couper (ou le métrage total). L’appli calcule les barres à acheter et les chutes. Les heures de découpe, de soudure et de finition se mettent dans « Main-d’œuvre et accessoires ».</p>`;
   else dims = `<p class="muted small" style="margin:0">L’escalier sera détaillé plus tard. Ajoutez les postes à la main en attendant.</p>`;
   const dimBox = el(`<div><div class="grid">${dims}</div><div class="qinfo num" data-qinfo style="margin-top:10px"></div></div>`);
   $$("[data-d]", dimBox).forEach(inp => {
     const k = inp.dataset.d;
     inp.addEventListener(inp.tagName==="SELECT"?"change":"input", e => { d[k] = e.target.value; touch(dv); if(k==="toit") render(); else recalc(); });
   });
-  if(g==="none") $("[data-qinfo]", dimBox).remove();
+  if(g==="none" || g==="tubes") $("[data-qinfo]", dimBox).remove();
   body.appendChild(dimBox);
+  if(g==="tubes") body.appendChild(tubesPanel(dv, o, () => recalc()));
   if(g==="bat"){
     const tb = el(`<div class="tools calc"><span class="muted small">Outils :</span><button class="btn sm" type="button" data-tool="schema">Schéma</button><button class="btn sm" type="button" data-tool="nv">Neige et vent</button><button class="btn sm" type="button" data-tool="predim">Pré-dimensionnement</button><button class="btn sm" type="button" data-tool="debit">Débits</button><button class="btn sm" type="button" data-tool="levage">Levage</button></div>`);
     tb.addEventListener("click", e => { const t = e.target.dataset.tool; if(t) CALC_TOOLS[t](dv, o); });
@@ -1271,10 +1302,11 @@ function recalc(focusEl){
 }
 
 /* ================= Onglet Prix fourniture et pose ================= */
-const CAT_GROUPS = [["ossature","Ossature"],["couverture","Couverture"],["bardage","Bardage"],["ouvertures","Ouvertures"],["hauvent","Hauvent"],["froid","Chambre froide"],["mezz","Mezzanine"],["gc","Garde-corps"],["escalier","Escalier"],["portail","Portail / clôture"],["soustraite","Bâtiment sous-traité"],["libre","Postes libres (type Autre)"],["commun","Postes communs"]];
+const CAT_GROUPS = [["ossature","Ossature"],["couverture","Couverture"],["bardage","Bardage"],["ouvertures","Ouvertures"],["hauvent","Hauvent"],["froid","Chambre froide"],["mezz","Mezzanine"],["gc","Garde-corps"],["escalier","Escalier"],["portail","Portail / clôture"],["soustraite","Bâtiment sous-traité"],["tubes","Tubes (métallerie), prix au mètre"],["metalMo","Métallerie : main-d’œuvre"],["libre","Postes libres (type Autre)"],["commun","Postes communs"]];
 const CAT_EXTRA = {
   couverture:[["Fumidôme / exutoire","u"]],
   ouvertures:Object.values(OUV_TYPES).map(l=>[l,"u"]).concat([["Habillages autour des ouvertures","ml"]]),
+  tubes:DATALISTS.tubes.map(t => [t,"ml"]),
   hauvent:[["Ossature hauvent","m²"],["Couverture hauvent","m²"],["Rives hauvent","ml"],["Gouttière hauvent","ml"],["Solin / raccord au bâtiment","ml"]]
 };
 function catItems(g){
@@ -1737,7 +1769,7 @@ const MEDIA = (() => {
   };
 })();
 function chOf(dv){ dv.chantier = dv.chantier || {}; const c = dv.chantier; c.heures = c.heures || []; c.photos = c.photos || []; c.croquis = c.croquis || []; c.cmd = c.cmd || {}; return c; }
-function mediaOf(dv){ const c = dv.chantier || {}; return (c.photos||[]).map(x => "ph_"+x.id).concat((c.croquis||[]).map(x => "sk_"+x.id)); }
+function mediaOf(dv){ const c = dv.chantier || {}; return (c.photos||[]).map(x => "ph_"+x.id).concat((c.croquis||[]).map(x => "sk_"+x.id), (c.fournPdf||[]).map(x => "pdf_"+x.id)); }
 function logDv(dv, txt){ dv.log = dv.log || []; dv.log.push({d:today(), t:txt}); }
 function setStatut(dv, st){ if(dv.statut===st) return; dv.statut = st; dv.dates = dv.dates || {}; dv.dates[st] = today(); logDv(dv, "Statut : " + st); touch(dv); }
 function nowHM(){ const d = new Date(); return String(d.getHours()).padStart(2,"0") + ":" + String(d.getMinutes()).padStart(2,"0"); }
@@ -1840,7 +1872,7 @@ function bonsCommande(dv){
   ouvragesRetenus(dv).forEach(o => {
     const a = activeLines(o);
     a.lines.filter(x => x.s.base!=="commun" && x.s.base!=="soustraite" && x.c.qty>0).forEach(x => {
-      const f = (DB.catalog[x.L.ckey]||{}).fournRetenu || "Fournisseur à choisir";
+      const f = x.L.data.fourn || (DB.catalog[x.L.ckey]||{}).fournRetenu || "Fournisseur à choisir";
       if(!g.has(f)) g.set(f, []);
       g.get(f).push({ouv:o.name, label:lineLabel(x.L), ref:x.L.data.ref||"", qty:x.c.qtyCh, unit:x.c.unit, pu:x.c.pu});
     });
@@ -2019,6 +2051,8 @@ function renderChantier(main){
     b.addEventListener("click", () => openSketch(dv, x)); $("[data-sk]", sk).appendChild(b);
   });
   main.appendChild(sk);
+
+  main.appendChild(pdfCard(dv));
 
   // Bons de commande
   const groups = bonsCommande(dv);
@@ -2289,6 +2323,67 @@ function toolPredim(dv, o){
   }}]);
 }
 
+/* Métallerie : tubes coupés dans des barres du commerce */
+function tubeCalc(x){
+  const bar = num(x.bar) || 6, kerf = has(x.kerf) ? num(x.kerf)/1000 : 0.003;
+  const pieces = (x.pieces||[]).map(p => [num(p[0]), Math.round(num(p[1]))]).filter(p => p[0] > 0 && p[1] > 0);
+  if(pieces.length){
+    const r = cutPlan(pieces, bar, kerf), long = r.tooLong.reduce((a,v) => a+v, 0);
+    const nb = r.bars.length + r.tooLong.reduce((a,v) => a + Math.ceil(v/bar), 0), ml = r.used + long, bought = nb*bar;
+    return {ml, nb, bar, bought, waste: ml ? (bought-ml)/ml*100 : 0, plan:r, pieces:true};
+  }
+  const ml = num(x.ml), nb = ml ? Math.ceil(ml/bar - 1e-9) : 0;
+  return {ml, nb, bar, bought:nb*bar, waste: ml ? (nb*bar-ml)/ml*100 : 0, plan:null, pieces:false};
+}
+function tubeSync(o, x){
+  const t = tubeCalc(x), d = dynData(o, "tube_"+x.id, {unit:"ml"});
+  d.chute = t.ml ? String(Math.round(t.waste*10)/10).replace(".", ",") : "";
+  if(has(x.sec) && !DATALISTS.tubes.includes(x.sec.trim())){ const g = DB.lib.custom.tubes = DB.lib.custom.tubes || []; if(!g.some(y => y.label===x.sec.trim())) g.push({label:x.sec.trim(), unit:"ml"}); }
+  return t;
+}
+function tubesPanel(dv, o, onChange){
+  o.tubes = o.tubes || [];
+  const all = [...new Set(DATALISTS.tubes.concat((DB.lib.custom.tubes||[]).map(y => y.label)))];
+  const box = el(`<div class="opts"><div><div class="check" style="margin-bottom:6px">Tubes</div><datalist id="dl-tubesec">${all.map(t => `<option value="${esc(t)}">`).join("")}</datalist><div data-list style="display:flex;flex-direction:column;gap:10px"></div><button class="dashed" type="button" style="margin-top:8px">+ Ajouter un tube</button></div></div>`);
+  const list = $("[data-list]", box);
+  o.tubes.forEach((x, i) => {
+    x.pieces = x.pieces || [];
+    const r = el(`<div class="tube"><div class="grid">
+      <label class="f wide"><span>Tube ${i+1} · section</span><input data-t="sec" list="dl-tubesec" value="${esc(x.sec||"")}" placeholder="Ex. Tube carré 40×40×2"></label>
+      <label class="f"><span>Barre du commerce (m)</span><input data-t="bar" inputmode="decimal" class="num" value="${esc(x.bar||"6")}"></label>
+      <label class="f"><span>Trait de scie (mm)</span><input data-t="kerf" inputmode="numeric" class="num" value="${esc(has(x.kerf)?x.kerf:"3")}"></label>
+      <label class="f"><span>Ou métrage total (ml)</span><input data-t="ml" inputmode="decimal" class="num" value="${esc(x.ml||"")}" placeholder="si pas de longueurs"></label></div>
+      <div class="pcs muted small" style="margin-top:8px"><span>Longueur à couper (m)</span><span>Quantité</span><span></span><span></span></div><div data-pcs></div>
+      <div class="row" style="margin-top:6px"><button class="btn sm ghost" type="button" data-addp>+ Longueur</button><button class="btn sm ghost danger" type="button" data-del>Retirer ce tube</button></div>
+      <div class="small" data-res style="margin-top:6px"></div></div>`);
+    const res = $("[data-res]", r);
+    const show = () => {
+      const t = tubeSync(o, x), mlIn = $("[data-t=ml]", r);
+      mlIn.disabled = t.pieces; mlIn.placeholder = t.pieces ? "calculé : " + fmtQ(Math.round(t.ml*100)/100) : "si pas de longueurs";
+      if(!t.ml){ res.innerHTML = `<span class="muted">Indiquez les longueurs à couper, ou le métrage total.</span>`; return; }
+      let pat = "";
+      if(t.plan){ const m = new Map(); t.plan.bars.forEach(b => { const k = b.cuts.map(fmtQ).join(" + "); const e = m.get(k) || {n:0, rest:b.rest}; e.n++; m.set(k, e); }); pat = [...m].map(([k,e]) => `<div>${e.n} × [ ${k} ] <span class="muted">chute ${fmtQ(Math.round(e.rest*100)/100)} m</span></div>`).join("") + (t.plan.tooLong.length ? `<div class="warn">${t.plan.tooLong.length} longueur(s) plus grande(s) que la barre : à abouter</div>` : ""); }
+      res.innerHTML = `<b>${fmtQ(Math.round(t.ml*100)/100)} ml utiles</b> · ${t.nb} barre(s) de ${fmtQ(t.bar)} m (${fmtQ(t.bought)} m achetés) · chutes ${fmtQ(Math.round((t.bought-t.ml)*100)/100)} m, soit ${fmtQ(Math.round(t.waste*10)/10)} %${pat?`<div class="muted" style="margin-top:4px">Plan de coupe :</div>${pat}`:""}`;
+    };
+    const pcs = $("[data-pcs]", r);
+    const drawP = () => { pcs.innerHTML = ""; x.pieces.forEach((p, j) => {
+      const pr = el(`<div class="pcs"><input inputmode="decimal" class="num" value="${esc(p[0])}" aria-label="Longueur (m)"><input inputmode="numeric" class="num" value="${esc(p[1])}" aria-label="Quantité"><span></span><button class="x" type="button" aria-label="Retirer">✕</button></div>`);
+      const [a, b] = $$("input", pr);
+      a.addEventListener("input", () => { p[0] = a.value; touch(dv); show(); onChange(); });
+      b.addEventListener("input", () => { p[1] = b.value; touch(dv); show(); onChange(); });
+      $(".x", pr).addEventListener("click", () => { x.pieces.splice(j, 1); touch(dv); drawP(); show(); onChange(); });
+      pcs.appendChild(pr);
+    }); };
+    $$("[data-t]", r).forEach(inp => inp.addEventListener("input", () => { x[inp.dataset.t] = inp.value; touch(dv); show(); onChange(); }));
+    $("[data-t=sec]", r).addEventListener("change", () => render());
+    $("[data-addp]", r).addEventListener("click", () => { x.pieces.push(["", "1"]); touch(dv); drawP(); show(); const ins = $$("input", pcs); if(ins.length) ins[ins.length-2].focus(); });
+    $("[data-del]", r).addEventListener("click", () => { o.tubes = o.tubes.filter(y => y!==x); delete o.dyn["tube_"+x.id]; touch(dv); render(); });
+    drawP(); show(); list.appendChild(r);
+  });
+  $("button.dashed", box).addEventListener("click", () => { o.tubes.push({id:uid(), sec:"", bar:"6", kerf:"3", ml:"", pieces:[["", "1"]]}); touch(dv); render(); });
+  return box;
+}
+
 /* C6 : optimisation des débits (barres du commerce) */
 function autoPieces(o, kind){
   const Q = quantities(o), d = o.d, n = Q.nbPortiques, tr = Math.max(1, n-1), lt = Q.L/tr, mono = d.toit==="1p"||d.toit==="1ph";
@@ -2502,6 +2597,472 @@ function meteoCard(dv){
   return card;
 }
 
+/* ================= Import d'un devis fournisseur (PDF) ================= */
+const PDFJS_V = "3.11.174";
+let PDFJS_P = null;
+function loadPdfjs(){
+  if(window.pdfjsLib) return Promise.resolve(window.pdfjsLib);
+  return PDFJS_P = PDFJS_P || new Promise((res, rej) => {
+    const srcs = (/^https?:$/.test(location.protocol) && !HOSTED ? ["pdf.min.js"] : []).concat(["https://cdnjs.cloudflare.com/ajax/libs/pdf.js/" + PDFJS_V + "/pdf.min.js"]);
+    const tryN = i => {
+      if(i >= srcs.length){ PDFJS_P = null; rej(new Error("lecteur PDF indisponible : vérifiez la connexion internet")); return; }
+      const s = document.createElement("script"); s.src = srcs[i];
+      s.onload = () => { if(window.pdfjsLib){ window.pdfjsLib.GlobalWorkerOptions.workerSrc = srcs[i].replace("pdf.min.js", "pdf.worker.min.js"); res(window.pdfjsLib); } else tryN(i+1); };
+      s.onerror = () => { s.remove(); tryN(i+1); };
+      document.head.appendChild(s);
+    };
+    tryN(0);
+  });
+}
+async function pdfExtract(buf){
+  const lib = await loadPdfjs();
+  const doc = await lib.getDocument({data:new Uint8Array(buf.slice(0))}).promise;
+  const pages = [];
+  for(let p = 1; p <= Math.min(doc.numPages, 10); p++){
+    const pg = await doc.getPage(p), vp = pg.getViewport({scale:1}), tc = await pg.getTextContent();
+    pages.push({w:vp.width, h:vp.height, items:tc.items.filter(i => i.str!==undefined).map(i => ({s:i.str, x:i.transform[4], y:i.transform[5], w:i.width, h:Math.abs(i.transform[3]) || Math.hypot(i.transform[2], i.transform[3])}))});
+  }
+  return pages;
+}
+/* PDFPARSE_START */
+/* Lecture simple d'un devis fournisseur : texte du PDF -> client, chantier, lignes (quantité, prix unitaire, montant) */
+function pdfNum(t){
+  t = String(t).replace(/[\s  ]/g,"").replace(/€/g,"");
+  if(!/^-?\d+(?:[.,]\d+)*$/.test(t)) return null;
+  if(/,\d+$/.test(t)) t = t.replace(/\./g,"").replace(",",".");
+  else if(/\.\d{3}$/.test(t) && /\.\d{3}\./.test(t + ".")) t = t.replace(/\./g,"");
+  else t = t.replace(/,/g,"");
+  const n = parseFloat(t); return isFinite(n) ? n : null;
+}
+const PDF_UNITS = {"m2":"m²","m²":"m²","ml":"ml","m":"ml","u":"u","un":"u","unite":"u","unité":"u","pce":"u","pc":"u","pcs":"u","ens":"forfait","ft":"forfait","forfait":"forfait","fft":"forfait","kg":"kg","h":"h","j":"jour","jour":"jour","jours":"jour"};
+function pdfRows(page){
+  const its = page.items.filter(i => i.s && i.s.trim()).sort((a,b) => b.y - a.y || a.x - b.x);
+  const rows = [];
+  its.forEach(i => {
+    const tol = Math.max(1.3, (i.h||8)*0.18);
+    let r = null, best = 99;
+    rows.forEach(x => { const dy = Math.abs(x.y - i.y); if(dy <= tol && dy < best && !x.items.some(o => i.x < o.x + o.w - 1 && o.x < i.x + i.w - 1)){ r = x; best = dy; } });
+    if(r) r.items.push(i); else rows.push({y:i.y, items:[i]});
+  });
+  rows.forEach(r => {
+    r.items.sort((a,b) => a.x - b.x);
+    // segments : morceaux de texte séparés par un vrai blanc
+    const segs = [];
+    r.items.forEach(i => {
+      const last = segs[segs.length-1], gap = last ? i.x - (last.x + last.w) : 99;
+      if(last && gap < Math.max(4, (i.h||8)*0.7)) { last.s += (gap > 1 && !/\s$/.test(last.s) && !/^\s/.test(i.s) ? " " : "") + i.s; last.w = i.x + i.w - last.x; }
+      else segs.push({s:i.s, x:i.x, w:i.w, h:i.h});
+    });
+    segs.forEach(s => s.s = s.s.replace(/\s+/g," ").trim());
+    r.segs = segs.filter(s => s.s);
+    r.x = r.segs.length ? r.segs[0].x : 0;
+    r.text = r.segs.map(s => s.s).join(" ");
+  });
+  return rows.filter(r => r.segs.length).sort((a,b) => Math.abs(a.y - b.y) < 2 ? a.x - b.x : b.y - a.y);
+}
+function pdfParse(pages){
+  const res = {fournisseur:"", numero:"", date:"", titre:"", client:{}, chantier:{}, dims:{}, lignes:[], totalHT:null, infos:[], signature:""};
+  const allRows = [];
+  const P = pages.map((pg, pi) => { const rows = pdfRows(pg); rows.forEach(r => { r.p = pi; allRows.push(r); }); return {pg, rows}; });
+  const full = allRows.map(r => r.text).join("\n");
+  const own = /endgo/i;
+  // en-tête
+  let m = full.match(/(?:DEVIS|OFFRE|PROPOSITION|COTATION)[^\n]{0,25}?N[°o º]\.?\s*:?\s*([A-Z0-9][A-Z0-9\-\/_.]{2,})/i) || full.match(/N[°º]\s*(?:de\s*)?(?:devis|offre)\s*:?\s*([A-Z0-9][A-Z0-9\-\/_.]{2,})/i);
+  if(m) res.numero = m[1];
+  m = full.match(/\b(\d{1,2})[\/.-](\d{1,2})[\/.-](20\d{2})\b/);
+  if(m) res.date = m[3] + "-" + m[2].padStart(2,"0") + "-" + m[1].padStart(2,"0");
+  const field = re => { for(const r of allRows){ const i = r.segs.findIndex(sg => re.test(sg.s)); if(i < 0) continue; const sg = r.segs[i], rest = sg.s.replace(re, "").replace(/^\s*:?\s*/, ""); if(rest.length > 2) return rest; const nx = r.segs[i+1]; if(nx && nx.x - (sg.x + sg.w) < 120) return nx.s; } return ""; };
+  res.titre = field(/^(V\/\s*R[ée]f[ée]rence|Votre r[ée]f[ée]rence|R[ée]f[ée]rence chantier|Chantier|Objet|Affaire)\b/i);
+  m = full.match(/IMPLANT[ÉE]E?\s*(?:À|A)\s*:?\s*([^\n]*?)\s+(\d{5})\b/i) || full.match(/(?:Lieu|Adresse)\s+(?:du\s+)?chantier\s*:?\s*([^\n]*?)\s*(\d{5})\b/i);
+  if(m){ res.chantier.ville = m[1].replace(/[,\-]\s*$/,"").trim(); res.chantier.cp = m[2]; }
+  m = full.match(/NEIGE\s*:?\s*([A-E][12]?)\b/i); if(m) res.chantier.neige = m[1].toUpperCase();
+  m = full.match(/VENT\s*:?\s*(?:R[ée]gion\s*)?([1-4])\b/i); if(m) res.chantier.vent = m[1];
+  m = full.match(/ALTITUDE\s*:?\s*(\d{1,4})\s*M\b/i); if(m) res.chantier.alt = m[1];
+  m = full.match(/larg\.?\s*([\d.,]+)\s*m\s*x\s*long\.?\s*([\d.,]+)\s*m\s*haut\.?\s*([\d.,]+)\s*m/i);
+  if(m) Object.assign(res.dims, {l:m[1].replace(".",","), L:m[2].replace(".",","), H:m[3].replace(".",",")});
+  m = full.match(/(\d)\s*pentes?\s*de\s*([\d.,]+)\s*%/i); if(m){ res.dims.pans = +m[1]; res.dims.pente = m[2]; }
+  ["POIDS TOITURE[^\n]*","NEIGE[^\n]*","OSSATURE NON COUVERTE","BÂTIMENT IMPLANTÉ[^\n]*"].forEach(k => { const x = full.match(new RegExp(k,"i")); if(x) res.infos.push(x[0].trim()); });
+  // fournisseur : signature légale (SIRET / RCS / TVA) ou nom de société, hors ENDGO
+  m = full.match(/(?:SIRET|SIREN|RCS)[^\n\d]*([\d ]{9,17})/i); if(m) res.signature = m[1].replace(/\s/g,"").slice(0,9);
+  const soc = allRows.filter(r => r.p===0 && !own.test(r.text)).map(r => r.text).find(t => /\b(SAS|SARL|SA|EURL|SASU|SNC|GmbH|S\.A\.S\.?|S\.A\.R\.L\.?)\b/.test(t) && /[A-Za-z]{3,}/.test(t.replace(/\b(SAS|SARL|SA|EURL|SASU|au capital|de|capital)\b/gi,"").replace(/[\d €.,]/g,"")));
+  if(soc){ const n = soc.replace(/\b(au capital|capital)\b.*$/i,"").replace(/\b(SAS|SARL|SA|EURL|SASU|SNC)\b/g,"").trim(); if(n.length > 2 && !/^\d/.test(n)) res.fournisseur = n; }
+  const site = full.match(/\bwww\.([a-z0-9-]+)\.[a-z]{2,}/i); if(!res.fournisseur && site && !own.test(site[1])) res.fournisseur = site[1].toUpperCase();
+  m = full.match(/^(.*?\d{5}\s+[A-ZÉÈ][A-ZÉÈ' -]{2,})\s*$/m); if(m && !own.test(m[1])) res.adresseFourn = m[1].trim();
+  // client : bloc destinataire, s'il ne s'agit pas d'ENDGO
+  const cr = allRows.filter(r => r.p===0 && /^(M\.|Mr\.?|Mme|Madame|Monsieur|Mlle)\s+[A-Za-zÀ-ÿ]/.test(r.text) && r.x > (pages[0].w||595)*0.45);
+  if(cr.length){
+    const r = cr[0], near = allRows.filter(x => x.p===0 && Math.abs(x.x - r.x) < 40 && Math.abs(x.y - r.y) < 70);
+    if(!near.some(x => own.test(x.text))){
+      const mm = r.text.match(/^(M\.|Mr\.?|Mme|Madame|Monsieur|Mlle)\s+(.+)$/); const parts = mm[2].trim().split(/\s+/);
+      res.client = {civ:/^M/.test(mm[1]) && !/^(Mme|Madame|Mlle)/.test(mm[1]) ? "M." : "Mme", nom:parts[0], prenom:parts.slice(1).join(" ")};
+      const cp = near.map(x => x.text.match(/^(\d{5})\s+(.+)$/)).find(Boolean); if(cp){ res.client.cp = cp[1]; res.client.ville = cp[2]; }
+    } else res.clientEstEndgo = true;
+  }
+  // tableau des lignes
+  const isHead = t => /D[ÉE]SIGNATION|LIBELL[ÉE]|DESCRIPTION|ARTICLE/i.test(t) && /\bQT[ÉE]?\b|QUANTIT[ÉE]|\bQTY\b/i.test(t) && /P\.?\s?U|PRIX|MONTANT|TOTAL/i.test(t);
+  let anyHead = P.some(p => p.rows.some(r => isHead(r.text)));
+  P.forEach(({pg, rows}) => {
+    const W = pg.w || 595;
+    let hi = rows.findIndex(r => isHead(r.text));
+    if(anyHead && hi < 0) return;
+    let qx = W*0.62, dx = null;
+    if(hi >= 0){
+      const h = rows[hi], q = h.segs.find(s => /QT|QUANTIT/i.test(s.s)) || h.items && null;
+      const qi = rows[hi].items.find(i => /^\s*(QT[ÉE]?|QUANTIT[ÉE]S?|QTY)\b/i.test(i.s)); if(qi) qx = qi.x - 25; else if(q) qx = q.x - 25;
+    }
+    let cur = null, lastWasItem = false, pendTot = false;
+    rows.slice(hi + 1).forEach(r => {
+      const left = r.segs.filter(s => s.x + s.w*0.5 < qx), right = r.segs.filter(s => s.x + s.w*0.5 >= qx);
+      const toks = [];
+      right.forEach(s => { const n = pdfNum(s.s); if(n!==null) toks.push({n, s:s.s}); else s.s.split(/\s+/).forEach(w => { const u = PDF_UNITS[w.toLowerCase()]; if(u) toks.push({u}); else { const nn = pdfNum(w); if(nn!==null) toks.push({n:nn, s:w}); } }); });
+      const nums = toks.filter(t => t.n!==undefined).map(t => t.n), unitTok = toks.find(t => t.u);
+      const txt = left.map(s => s.s).join(" ").trim();
+      const rt = r.text.trim();
+      if(/^(SOUS[- ]?TOTAL|TOTAL|NET A PAYER|NET À PAYER|TVA|ACOMPTE|REPORT|MONTANT TOTAL)/i.test(rt) || (!txt && /TOTAL/i.test(rt))){ cur = null; lastWasItem = false; const nn = (rt.match(/-?\d{1,3}(?:[ \u00a0\u202f.]\d{3})*(?:,\d+)?|-?\d+(?:[.,]\d+)?/g)||[]).map(pdfNum).filter(v => v!==null); if(/^(MONTANT )?TOTAL\b/i.test(rt) && !/TTC|TVA|SOUS/i.test(rt) && res.totalHT===null){ if(nn.length) res.totalHT = nn[nn.length-1]; else pendTot = true; }
+        if(/TTC/i.test(rt) && nn.length) res.ttc = nn[nn.length-1];
+        if(/^TVA/i.test(rt) && nn.length) res.tva = nn[nn.length-1];
+        return; }
+      if(pendTot){ pendTot = false; if(nums.length === 1 && res.totalHT===null){ res.totalHT = nums[0]; return; } }
+      let item = null;
+      if(nums.length >= 3){ const [q, pu, tot] = nums.slice(-3); if(Math.abs(q*pu - tot) <= Math.max(0.05, Math.abs(tot)*0.012)) item = {qty:q, pu, total:tot}; else { const rem = nums.length>=3 ? nums.slice(-3) : nums; if(Math.abs(rem[0]*rem[1]*(1-rem[2]/100) - nums[nums.length-1])<0.05) item = {qty:rem[0], pu:rem[1], total:nums[nums.length-1]}; } }
+      if(!item && nums.length === 2){ const [a, b] = nums; if(Number.isInteger(a) && a > 0 && a < 100000 && txt) item = {qty:a, pu:b, total:a*b}; }
+      if(item && txt){
+        if(dx===null) dx = r.x;
+        cur = {designation:txt, details:[], qty:item.qty, pu:item.pu, total:item.total, unit:unitTok ? unitTok.u : ""}; const ls = left[left.length-1]; cur.full = ls && ls.x + ls.w > qx - 90;
+        res.lignes.push(cur); lastWasItem = true; return;
+      }
+      if(!txt) return;
+      if(cur && dx!==null && r.x > dx + 3){ cur.details.push(txt); lastWasItem = false; return; }
+      if(cur && lastWasItem && cur.full && txt.length < 40 && r.x <= dx + 3 && !/:/.test(txt)){ cur.designation += " " + txt; lastWasItem = false; return; }
+      lastWasItem = false;
+      if(dx!==null && r.x <= dx + 3 && /^[^a-z]*$/.test(txt) && txt.length < 60) { cur = null; res.lastHead = txt; }
+    });
+  });
+  if(res.totalHT===null && res.ttc && res.tva) res.totalHT = Math.round((res.ttc - res.tva)*100)/100;
+  res.lignes.forEach(l => {
+    l.designation = l.designation.replace(/\s+/g," ").trim();
+    const all = (l.designation + " " + l.details.join(" ")).toUpperCase();
+    if(!l.unit){ if(/PRIX AU M[²2]|\/\s?M[²2]\b|\bM[²2]\b/.test(l.designation.toUpperCase())) l.unit = "m²"; else if(/PRIX AU ML|\/\s?ML\b|\bML\b|PRIX AU M[ÈE]TRE/.test(l.designation.toUpperCase())) l.unit = "ml"; else if(/TRANSPORT|LIVRAISON|FORFAIT|REMISE|MONTAGE/.test(l.designation.toUpperCase()) || (Math.abs(l.pu) > 1500 && l.qty===1)) l.unit = "forfait"; else l.unit = "u"; }
+    const r = l.designation.match(/\b(R[ée]f\.?|Code)\s*:?\s*([A-Z0-9\-\/.]{3,})/i); l.ref = r ? r[2] : "";
+  });
+  return res;
+}
+
+function pdfNorm(t){ return String(t||"").toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g,"").replace(/[^a-z0-9]+/g," ").trim(); }
+function pdfNice(t){
+  t = String(t||"").replace(/\s*[-–]?\s*PRIX AU (M²|M2|ML|M[ÈE]TRE).*$/i, "").replace(/\s+/g," ").trim();
+  if(t && t === t.toUpperCase() && /[A-Z]{3}/.test(t)) t = t.charAt(0) + t.slice(1).toLowerCase();
+  return t;
+}
+const PDF_GROUP_RULES = [
+  [/transport|livraison|enl[eè]vement/i, "commun", "Transport / livraison"],
+  [/grue|nacelle|levage|chariot [eé]l[eé]vateur/i, "commun", "Levage : grue, nacelle, chariot"],
+  [/[eé]tude|plans?\b|note de calcul/i, "commun", "Études / plans / note de calcul"],
+  [/fondation|massif|prescellement|scellement/i, "commun", null],
+  [/panneau.*(frigo|isotherme)|chambre froide/i, "froid", null],
+  [/garde[- ]corps|main courante/i, "gc", null],
+  [/escalier/i, "escalier", null],
+  [/portail|cl[oô]ture|portillon/i, "portail", null],
+  [/porte|fen[eê]tre|ch[aâ]ssis|rideau/i, "ouvertures", null],
+  [/armature.*bardage|lisse|potelet/i, "ossature", null],
+  [/bardage|bavette|larmier|habillage/i, "bardage", null],
+  [/ch[eé]neau|goutti[eè]re|descente|fa[iî]tag|rive|closoir|bac acier|couverture|t[oô]le|translucide/i, "couverture", null],
+  [/charpente|poteau|traverse|panne|[eé]clisse|poutre|contreventement|ossature|portique|ipe|hea|heb/i, "ossature", null]
+];
+function pdfGuessType(r){
+  const t = (r.lignes||[]).map(l => l.designation + " " + (l.details||[]).join(" ")).join(" ") + " " + (r.infos||[]).join(" ") + " " + (r.titre||"");
+  if(/panneau.*frigo|chambre froide/i.test(t)) return "froid";
+  if(/charpente|ossature|portique|poteau/i.test(t)){
+    const nc = /non couvert/i.test(t), couv = !nc && /bac acier|couverture|t[oô]le|panneau sandwich/i.test(t), bard = /bardage/i.test(t) && /t[oô]le|bac|panneau/i.test(t.replace(/sans t[oô]le/gi,""));
+    return couv && bard ? "complet" : couv ? "oss_couv" : bard && !nc ? "oss_bard" : "ossature";
+  }
+  if(/bac acier|couverture/i.test(t)) return "couv";
+  if(/bardage/i.test(t)) return "bard";
+  if(/garde[- ]corps/i.test(t)) return "gc";
+  if(/escalier/i.test(t)) return "escalier";
+  if(/portail|cl[oô]ture/i.test(t)) return "portail";
+  if(/mezzanine|plancher/i.test(t)) return "mezz";
+  return "autre";
+}
+function pdfSecs(type){ return TYPES[type].sections.filter(k => k!=="ouvertures" || type==="bard" || type==="complet" || type==="oss_bard"); }
+function pdfFixGroup(g, type){
+  const s = pdfSecs(type);
+  if(s.includes(g)) return g;
+  if((g==="couverture" || g==="bardage") && s.includes("ossature")) return "ossature";
+  return s.find(k => k!=="commun") || s[0];
+}
+/* Poste proposé pour une ligne : mémoire des imports, puis mots-clés, puis nouveau poste */
+function pdfSuggest(l, type){
+  const key = pdfNorm(l.designation);
+  const mem = (DB.pdfMap||{})[key];
+  if(mem && pdfSecs(type).includes(mem.g) && catItems(mem.g).some(x => x.label===mem.label)) return "p|" + mem.g + "|" + mem.label;
+  const all = l.designation + " " + (l.details||[]).join(" ");
+  let g = null, lab = null;
+  for(const [re, gg, ll] of PDF_GROUP_RULES){ if(re.test(l.designation) || (!g && re.test(all))){ g = gg; lab = ll; if(re.test(l.designation)) break; } }
+  g = pdfFixGroup(g || "", type);
+  if(lab && g==="commun" && catItems("commun").some(x => x.label===lab)) return "p|commun|" + lab;
+  const words = key.split(" ").filter(w => w.length > 2);
+  const hit = catItems(g).find(x => { const lw = pdfNorm(x.label).split(" ").filter(w => w.length > 2); return lw.length && words.length && lw.filter(w => words.includes(w)).length / Math.max(lw.length, words.length) >= 0.6; });
+  if(hit) return "p|" + g + "|" + hit.label;
+  const unique = /remise|rabais|escompte/i.test(l.designation) || /\d+[,.]?\d*\s*[xX×]\s*\d+/.test(l.designation) || num(l.pu) < 0;
+  return (unique ? "o|" : "n|") + g;
+}
+function pdfPosteOptions(type, cur, l){
+  let h = "";
+  pdfSecs(type).forEach(g => {
+    const title = (CAT_GROUPS.find(x => x[0]===g)||[g, TPL[g] ? TPL[g].title : g])[1];
+    h += `<optgroup label="${esc(title)}"><option value="n|${g}">Nouveau poste « ${esc(pdfNice(l.designation).slice(0,40))} »</option><option value="o|${g}">Ligne de ce devis seulement</option>`;
+    catItems(g).forEach(it => h += `<option value="${esc("p|"+g+"|"+it.label)}">${esc(it.label)}</option>`);
+    h += `</optgroup>`;
+  });
+  const t = document.createElement("select"); t.innerHTML = h; t.value = cur; if(t.value!==cur) t.selectedIndex = 0;
+  return {html:h, val:t.value};
+}
+function pdfKnownFourn(){
+  const s = new Set();
+  Object.values(DB.catalog||{}).forEach(c => (c.fourn||[]).forEach(f => has(f.nom) && s.add(f.nom)));
+  Object.values(DB.pdfFourn||{}).forEach(n => s.add(n));
+  return [...s].sort();
+}
+/* Lecture du fichier choisi */
+function pdfPick(){
+  let inp = document.getElementById("pdfFile");
+  if(!inp){
+    inp = el(`<input type="file" id="pdfFile" accept="application/pdf,.pdf" hidden>`); document.body.appendChild(inp);
+    inp.addEventListener("change", () => { const f = inp.files[0]; inp.value = ""; if(f) pdfOpenFile(f); });
+  }
+  inp.click();
+}
+async function pdfOpenFile(f){
+  if(f.size > 25*1024*1024) return toast("PDF trop lourd (plus de 25 Mo)");
+  toast("Lecture du PDF…");
+  const buf = await f.arrayBuffer();
+  const dataUrl = await new Promise(res => { const r = new FileReader(); r.onload = () => res(r.result); r.readAsDataURL(new Blob([buf], {type:"application/pdf"})); });
+  let res = null, err = "";
+  try{ res = pdfParse(await pdfExtract(buf)); }
+  catch(e){ err = e && e.message || String(e); }
+  if(!res) res = {lignes:[], client:{}, chantier:{}, dims:{}, infos:[]};
+  res.src = "simple";
+  pdfReview(res, {dataUrl, name:f.name, err});
+}
+/* Écran de vérification commun (lecture simple ou IA) */
+function pdfReview(r, file){
+  r.client = r.client || {}; r.chantier = r.chantier || {}; r.dims = r.dims || {}; r.infos = r.infos || []; r.lignes = r.lignes || [];
+  if(!has(r.fournisseur) && r.signature && (DB.pdfFourn||{})[r.signature]) r.fournisseur = DB.pdfFourn[r.signature];
+  const type0 = TYPES[r.type] ? r.type : pdfGuessType(r);
+  const st = {type:type0, lines:r.lignes.map(l => ({on:true, designation:l.designation||"", details:Array.isArray(l.details)?l.details:(has(l.details)?[l.details]:[]), ref:l.ref||"", qty:l.qty, unit:UNITS.includes(l.unit)?l.unit:"u", pu:l.pu, total:l.total, poste:null}))};
+  st.lines.forEach(l => l.poste = pdfSuggest(l, st.type));
+  const cl = r.client, match = has(cl.nom) ? DB.clients.find(c => pdfNorm(c.nom)===pdfNorm(cl.nom) && (!has(cl.prenom) || !has(c.prenom) || pdfNorm(c.prenom)===pdfNorm(cl.prenom))) : null;
+  const sumL = () => st.lines.filter(l => l.on).reduce((a,l) => a + num(l.qty)*num(l.pu), 0);
+  const fmtN = v => v===null || v===undefined || v==="" ? "" : String(Math.round(num(v)*1000)/1000).replace(".", ",");
+  const box = el(`<div class="pdfrev">
+    ${file.err ? `<p class="small" style="color:var(--danger);margin:0">Lecture simple impossible : ${esc(file.err)}</p>` : ""}
+    ${!file.err && !r.lignes.length ? `<p class="small" style="color:var(--accent);margin:0">Aucune ligne de prix trouvée par la lecture simple${syncOn()?" : essayez « Lire avec l’IA »":""}. Vous pouvez aussi ajouter les lignes à la main.</p>` : ""}
+    <p class="muted small" style="margin:0">${r.src==="ia"?"Lu par l’IA":"Lecture simple"} de <b>${esc(file.name||"devis.pdf")}</b>. Vérifiez et corrigez si besoin, puis touchez « Créer ».</p>
+    <div class="grid">
+      <label class="f"><span>Fournisseur</span><input data-r="fournisseur" list="dl-fourn" value="${esc(r.fournisseur||"")}" placeholder="Nom du fournisseur"></label>
+      <label class="f"><span>N° du devis fournisseur</span><input data-r="numero" value="${esc(r.numero||"")}"></label>
+      <label class="f"><span>Date</span><input data-r="date" type="date" value="${esc(r.date||today())}"></label>
+    </div>
+    <datalist id="dl-fourn">${pdfKnownFourn().map(n => `<option value="${esc(n)}">`).join("")}</datalist>
+    ${r.adresseFourn ? `<p class="muted small" style="margin:-4px 0 0">Adresse lue : ${esc(r.adresseFourn)}</p>` : ""}
+    <h3 class="sub">Client</h3>
+    <label class="f"><span>Client</span><select data-cl><option value="">— Nouveau client —</option><option value="-">Pas de client pour l’instant</option>${DB.clients.slice().sort((a,b)=>clientName(a).localeCompare(clientName(b))).map(c => `<option value="${c.id}" ${match&&match.id===c.id?"selected":""}>${esc(clientName(c))}</option>`).join("")}</select></label>
+    <div class="grid" data-newcl>
+      <label class="f"><span>Nom</span><input data-c="nom" value="${esc(cl.nom||"")}"></label>
+      <label class="f"><span>Prénom</span><input data-c="prenom" value="${esc(cl.prenom||"")}"></label>
+      <label class="f"><span>Société</span><input data-c="societe" value="${esc(cl.societe||"")}"></label>
+      <label class="f"><span>Téléphone</span><input data-c="tel" type="tel" value="${esc(cl.tel||"")}"></label>
+    </div>
+    ${r.clientEstEndgo ? `<p class="muted small" style="margin:0">Ce devis est adressé à ENDGO : le client final n’y figure pas. Indiquez son nom, ou choisissez « Pas de client pour l’instant ».</p>` : ""}
+    <h3 class="sub">Chantier</h3>
+    <div class="grid">
+      <label class="f wide"><span>Titre du devis</span><input data-r="titre" value="${esc(r.titre||"")}"></label>
+      <label class="f"><span>Code postal</span><input data-h="cp" inputmode="numeric" value="${esc(r.chantier.cp||cl.cp||"")}"></label>
+      <label class="f"><span>Commune</span><input data-h="ville" value="${esc(r.chantier.ville||cl.ville||"")}"></label>
+      <label class="f"><span>Type d’ouvrage</span><select data-type>${opts(Object.entries(TYPES).map(([k,v]) => [k, v.label]), st.type)}</select></label>
+    </div>
+    <p class="muted small" style="margin:0" data-site>${[r.dims.l&&r.dims.L?"Bâtiment "+esc(r.dims.l)+" × "+esc(r.dims.L)+" m"+(r.dims.H?", H "+esc(r.dims.H)+" m":"")+(r.dims.pente?", pente "+esc(r.dims.pente)+" %":""):"", r.chantier.neige?"neige "+esc(r.chantier.neige):"", r.chantier.vent?"vent région "+esc(r.chantier.vent):"", r.chantier.alt?"altitude "+esc(r.chantier.alt)+" m":""].filter(Boolean).join(" · ")}</p>
+    <h3 class="sub">Lignes (prix d’achat HT)</h3>
+    <div data-lines></div>
+    <div class="row"><button class="btn sm" type="button" data-addl>+ Ajouter une ligne</button></div>
+    <p class="small" data-sum style="margin:0"></p>
+    <label class="chk"><input type="checkbox" data-opt="cat" checked> Noter ces prix pour ce fournisseur dans l’onglet Prix</label>
+    <label class="chk"><input type="checkbox" data-opt="off" checked> Retirer du devis les postes du modèle qui ne viennent pas du PDF</label>
+  </div>`);
+  const linesBox = $("[data-lines]", box);
+  const drawSum = () => {
+    const s = sumL(), t = r.totalHT, ok = has(t) && Math.abs(s - num(t)) < 1;
+    $("[data-sum]", box).innerHTML = `Total des lignes cochées : <b>${eur(s)}</b>` + (has(t) ? ` · total HT du PDF : ${eur(num(t))} <span class="${ok?"ok":"warn"}">${ok?"identique":"différent, vérifiez"}</span>` : "");
+  };
+  const drawLines = () => {
+    linesBox.innerHTML = "";
+    st.lines.forEach((l, i) => {
+      const po = pdfPosteOptions(st.type, l.poste, l); l.poste = po.val;
+      const row = el(`<div class="pdfl${l.on?"":" off"}">
+        <div class="row" style="flex-wrap:nowrap;align-items:flex-start"><input type="checkbox" data-k="on" ${l.on?"checked":""} aria-label="Reprendre cette ligne"><textarea data-k="designation" rows="2" style="flex:1">${esc(l.designation)}</textarea><button class="x" type="button" data-del aria-label="Supprimer">✕</button></div>
+        ${l.details.length ? `<span class="muted small">${esc(l.details.slice(0,3).join(" · ").slice(0,180))}</span>` : ""}
+        <div class="pdfg"><label class="f"><span>Qté</span><input data-k="qty" inputmode="decimal" class="num" value="${esc(fmtN(l.qty))}"></label>
+        <label class="f"><span>Unité</span><select data-k="unit">${opts(UNITS, l.unit)}</select></label>
+        <label class="f"><span>PU achat €</span><input data-k="pu" inputmode="decimal" class="num" value="${esc(fmtN(l.pu))}"></label>
+        <label class="f"><span>Montant</span><input disabled class="num" data-tot value="${esc(fmt(num(l.qty)*num(l.pu)))}"></label></div>
+        <label class="f"><span>Poste</span><select data-k="poste">${po.html}</select></label></div>`);
+      $("[data-k=poste]", row).value = l.poste;
+      $$("[data-k]", row).forEach(inp => inp.addEventListener(inp.type==="checkbox" || inp.tagName==="SELECT" ? "change" : "input", () => {
+        const k = inp.dataset.k; l[k] = inp.type==="checkbox" ? inp.checked : inp.value;
+        if(k==="on") row.classList.toggle("off", !l.on);
+        if(k==="qty" || k==="pu") $("[data-tot]", row).value = fmt(num(l.qty)*num(l.pu));
+        drawSum();
+      }));
+      $("[data-del]", row).addEventListener("click", () => { st.lines.splice(i, 1); drawLines(); });
+      linesBox.appendChild(row);
+    });
+    drawSum();
+  };
+  drawLines();
+  $("[data-addl]", box).addEventListener("click", () => { const l = {on:true, designation:"", details:[], ref:"", qty:"1", unit:"u", pu:"", poste:"o|"+pdfFixGroup("", st.type)}; st.lines.push(l); drawLines(); });
+  $("[data-type]", box).addEventListener("change", e => { st.type = e.target.value; st.lines.forEach(l => { const g = l.poste.split("|")[1]; if(!pdfSecs(st.type).includes(g)) l.poste = pdfSuggest(l, st.type); }); drawLines(); });
+  const clSel = $("[data-cl]", box), newCl = $("[data-newcl]", box);
+  const clVis = () => newCl.hidden = clSel.value!=="";
+  clSel.addEventListener("change", clVis); clVis();
+  const buttons = [{label:"Annuler", cls:"ghost"}];
+  if(syncOn() && r.src!=="ia") buttons.push({label:"Lire avec l’IA", onClick:() => { pdfAI(file); return false; }});
+  buttons.push({label:"Créer client, devis et chantier", cls:"primary", onClick:bg => {
+    const v = k => $(`[data-r=${k}]`, bg).value.trim();
+    const fourn = v("fournisseur");
+    if(!fourn){ toast("Indiquez le nom du fournisseur"); $("[data-r=fournisseur]", bg).focus(); return false; }
+    if(!st.lines.some(l => l.on && has(l.designation))){ toast("Aucune ligne cochée"); return false; }
+    const c = {}; $$("[data-c]", bg).forEach(i => c[i.dataset.c] = i.value.trim());
+    pdfCreate(r, st, file, {fourn, numero:v("numero"), date:v("date") || today(), titre:v("titre"), clientSel:clSel.value, client:Object.assign({}, cl, c),
+      cp:$("[data-h=cp]", bg).value.trim(), ville:$("[data-h=ville]", bg).value.trim(), cat:$("[data-opt=cat]", bg).checked, off:$("[data-opt=off]", bg).checked});
+  }});
+  const m = modal("Devis fournisseur PDF", box, buttons);
+  $(".modal", m).classList.add("wide");
+}
+/* Lecture par l'IA : le PDF part vers le script Google, qui interroge Claude avec la clé qu'il garde */
+async function pdfAI(file){
+  if(!syncOn()) return toast("Branchez d’abord la synchronisation Google");
+  const wait = modal("Lecture par l’IA", `<p style="margin:0">Le PDF est envoyé à votre script Google, qui le fait lire par l’IA. Cela prend en général 20 à 60 secondes.</p><p class="muted small" style="margin:6px 0 0" data-w>Envoi…</p>`, [{label:"Fermer", cls:"ghost"}]);
+  try{
+    const r = await syncCall({action:"analysePdf", name:file.name, data:String(file.dataUrl).split(",")[1]});
+    if(!r || !r.ok) throw new Error(r && r.err || "réponse inattendue");
+    wait.remove();
+    const x = r.result || {};
+    const res = {fournisseur:x.fournisseur||"", numero:x.numero||"", date:/^\d{4}-\d{2}-\d{2}$/.test(x.date||"")?x.date:"", titre:x.titre||"",
+      client:x.client||{}, chantier:x.chantier||{}, dims:x.dims||{}, infos:(has(x.infos)?[x.infos]:[]), totalHT:has(x.totalHT)?num(x.totalHT):null,
+      lignes:(x.lignes||[]).map(l => ({designation:l.designation||"", details:has(l.details)?[l.details]:[], ref:l.ref||"", qty:num(l.qty)||1, unit:UNITS.includes(l.unit)?l.unit:"u", pu:num(l.pu), total:num(l.total)})),
+      signature:x.siret ? String(x.siret).replace(/\s/g,"").slice(0,9) : "", src:"ia", clientEstEndgo:/endgo/i.test(JSON.stringify(x.client||{}))};
+    if(res.clientEstEndgo) res.client = {};
+    if(has(res.dims.pans)) res.dims.pans = num(res.dims.pans);
+    $$(".modal-bg").forEach(b => { if($(".pdfrev", b)) b.remove(); });
+    pdfReview(res, file);
+  }catch(e){
+    const w = $("[data-w]", wait); const msg = e && e.message || String(e);
+    if(w) w.innerHTML = `<span style="color:var(--danger)">Lecture IA impossible : ${esc(/fetch|network/i.test(msg) ? "pas de connexion internet" : msg)}</span>`;
+  }
+}
+/* Création : client, devis, ouvrage, fiche chantier, prix fournisseur */
+function pdfCreate(r, st, file, f){
+  const fr = n => String(Math.round(num(n)*1000)/1000).replace(".", ",");
+  // client
+  let clientId = "";
+  if(f.clientSel && f.clientSel!=="-") clientId = f.clientSel;
+  else if(f.clientSel===""){
+    const c = f.client;
+    if(has(c.nom) || has(c.societe)){
+      const nc = {id:uid(), created:today(), type:has(c.societe)?"pro":"particulier", civ:c.civ||"", nom:c.nom||"", prenom:c.prenom||"", societe:c.societe||"", tel:c.tel||"", email:c.email||"", adresse:c.adresse||"", cp:c.cp||f.cp||"", ville:c.ville||f.ville||"", chantier:"", notes:"Créé depuis le devis " + f.fourn + (f.numero?" n° "+f.numero:"")};
+      if(has(f.ville) && has(c.ville) && pdfNorm(c.ville)!==pdfNorm(f.ville)) nc.chantier = [r.chantier.adresse, f.cp, f.ville].filter(has).join(" ");
+      DB.clients.push(nc); clientId = nc.id;
+    }
+  }
+  // devis et ouvrage
+  const o = newOuvrage(st.type, 1);
+  const D = r.dims || {};
+  if(TYPES[st.type].geo==="bat"){
+    if(has(D.L)) o.d.L = String(D.L); if(has(D.l)) o.d.l = String(D.l); if(has(D.H)) o.d.H = String(D.H);
+    if(has(D.pente)) o.d.pente = String(D.pente);
+    if(D.pans===1 && !TYPES[st.type].toit) o.d.toit = "1p";
+  }
+  const used = new Set(), newCustom = {};
+  st.lines.filter(l => l.on && has(l.designation)).forEach(l => {
+    const [kind, g, plabel] = l.poste.split("|");
+    o.sec[g] = o.sec[g] || [];
+    const unit = l.unit, nice = pdfNice(l.designation);
+    let ln = null;
+    if(kind==="p"){
+      ln = o.sec[g].find(x => (x.tpl||x.label)===plabel && !used.has(x.id) && !x.custom);
+      if(!ln){ ln = {id:uid(), label:plabel, tpl:plabel, nu:unit, unit, unitSet:true, f:null, list:null, off:false, ref:"", qty:"", pu:"", chute:"", marge:""}; if(catItems(g).find(x => x.label===plabel && x.custom)) ln.custom = true; o.sec[g].push(ln); }
+      if(ln.nu!==unit){ ln.unit = unit; ln.unitSet = true; }
+      if(pdfNorm(plabel)!==pdfNorm(nice)) ln.ref = nice.slice(0, 80);
+    } else {
+      const label = kind==="n" ? nice : l.designation.replace(/\s+/g," ").trim();
+      ln = {id:uid(), label, nu:unit, unit, unitSet:true, f:null, list:null, off:false, ref:"", qty:"", pu:"", chute:"", marge:"", custom:true};
+      o.sec[g].push(ln);
+      if(kind==="n"){ newCustom[g] = newCustom[g] || []; newCustom[g].push({label, unit}); }
+    }
+    used.add(ln.id);
+    Object.assign(ln, {off:false, qty:fr(l.qty), pu:fr(l.pu), fourn:f.fourn, pdf:f.numero||""});
+    if(has(l.ref) && !has(ln.ref)) ln.ref = l.ref;
+    const ckey = g + "|" + (ln.tpl || ln.label);
+    if(kind!=="o"){
+      DB.pdfMap = DB.pdfMap || {}; DB.pdfMap[pdfNorm(l.designation)] = {g, label:ln.tpl || ln.label};
+      if(f.cat && num(l.pu) > 0){
+        const cat = DB.catalog[ckey] = DB.catalog[ckey] || {};
+        if(!cat.unit) cat.unit = unit;
+        cat.fourn = (cat.fourn||[]).filter(x => x.nom!==f.fourn).concat([{nom:f.fourn, prix:fr(l.pu), date:f.date, ref:f.numero||""}]);
+        if(!has(cat.pu)){ cat.pu = fr(l.pu); cat.puDate = f.date; cat.fournRetenu = f.fourn; }
+      }
+    }
+  });
+  Object.entries(newCustom).forEach(([g, arr]) => { DB.lib.custom[g] = (DB.lib.custom[g]||[]).filter(x => !arr.some(a => a.label.toLowerCase()===x.label.toLowerCase())).concat(arr); });
+  if(f.off) Object.values(o.sec).forEach(arr => arr.forEach(x => { if(!used.has(x.id)) x.off = true; }));
+  const dv = {id:uid(), num:nextNum(), clientId, titre:f.titre, date:today(), statut:"Brouillon", tva:"20", ouvrages:[o], checklist:null, updated:today()};
+  dv.dates = {}; dv.log = [];
+  // site : neige, vent, altitude
+  const C = r.chantier || {};
+  dv.site = {cp:f.cp||"", ville:f.ville||"", terrain:"IIIa"};
+  if(has(C.alt)) dv.site.alt = String(C.alt);
+  if(has(C.neige) && SK200[String(C.neige).toUpperCase()]) dv.site.zoneN = String(C.neige).toUpperCase();
+  if(has(C.vent)) dv.site.vb0 = ({1:"22",2:"24",3:"26",4:"28"})[String(C.vent)] || "";
+  // fiche chantier
+  const ch = chOf(dv), pid = uid(), total = st.lines.filter(l => l.on).reduce((a,l) => a + num(l.qty)*num(l.pu), 0);
+  ch.fournPdf = [{id:pid, fourn:f.fourn, num:f.numero||"", date:f.date, total, name:file.name||"devis.pdf"}];
+  ch.note = ["Devis " + f.fourn + (f.numero?" n° "+f.numero:"") + " du " + frDate(f.date) + " : " + eur(total) + " HT", (r.infos||[]).join(" · "), has(C.adresse) ? "Adresse : " + C.adresse : ""].filter(has).join(". ");
+  logDv(dv, "Créé depuis le devis " + f.fourn + (f.numero?" n° "+f.numero:""));
+  if(file.dataUrl) MEDIA.put("pdf_"+pid, file.dataUrl);
+  if(r.signature){ DB.pdfFourn = DB.pdfFourn || {}; DB.pdfFourn[r.signature] = f.fourn; }
+  DB.devis.push(dv); DB.ui.devisId = dv.id; DB.ui.tab = "devis";
+  saveNow(); render(); window.scrollTo(0,0);
+  toast("Devis " + dv.num + " créé depuis le PDF");
+}
+async function pdfShow(id, name){
+  const d = await MEDIA.get("pdf_"+id);
+  if(!d) return toast("PDF absent de cet appareil" + (syncOn() ? " : il arrivera à la prochaine synchro" : ""));
+  const blob = await (await fetch(d)).blob(), url = URL.createObjectURL(blob);
+  const w = window.open(url, "_blank");
+  if(!w){ const a = document.createElement("a"); a.href = url; a.download = name || "devis-fournisseur.pdf"; document.body.appendChild(a); a.click(); a.remove(); }
+  setTimeout(() => URL.revokeObjectURL(url), 60000);
+}
+function pdfCard(dv){
+  const c = chOf(dv); c.fournPdf = c.fournPdf || [];
+  const card = el(`<section class="card"><div class="row" style="justify-content:space-between;margin-bottom:8px"><h2 style="margin:0">Devis fournisseurs (${c.fournPdf.length})</h2><button class="btn" type="button" data-add>+ PDF</button></div><div data-l></div></section>`);
+  $("[data-l]", card).innerHTML = c.fournPdf.length ? c.fournPdf.map(x => `<div class="item"><div class="row" style="justify-content:space-between"><b>${esc(x.fourn)}${x.num?" · n° "+esc(x.num):""}</b><span class="num">${eur(num(x.total))} HT</span></div><span class="muted small">${frDate(x.date)} · ${esc(x.name||"")}</span><div class="row"><button class="btn sm" type="button" data-o="${esc(x.id)}">Ouvrir le PDF</button><button class="btn sm ghost danger" type="button" data-x="${esc(x.id)}">Retirer</button></div></div>`).join("") : `<p class="muted small" style="margin:0">Gardez ici les devis PDF reçus des fournisseurs pour ce chantier. Pour créer un nouveau devis à partir d’un PDF, utilisez « Importer un PDF » dans l’onglet Devis.</p>`;
+  card.addEventListener("click", e => {
+    const o = e.target.dataset.o, x = e.target.dataset.x;
+    if(o) pdfShow(o, (c.fournPdf.find(y => y.id===o)||{}).name);
+    if(x) confirmBox("Retirer ce PDF du chantier ?", "Retirer", () => { c.fournPdf = c.fournPdf.filter(y => y.id!==x); MEDIA.del("pdf_"+x).catch(()=>{}); touch(dv); render(); });
+    if(e.target.dataset.add!==undefined){
+      const inp = el(`<input type="file" accept="application/pdf,.pdf" hidden>`); document.body.appendChild(inp);
+      inp.addEventListener("change", async () => { const fl = inp.files[0]; inp.remove(); if(!fl) return;
+        const d = await new Promise(res => { const rd = new FileReader(); rd.onload = () => res(rd.result); rd.readAsDataURL(fl); });
+        askText("PDF fournisseur", "Fournisseur", "", nom => { const id = uid(); MEDIA.put("pdf_"+id, d); c.fournPdf.push({id, fourn:nom||"Fournisseur", num:"", date:today(), total:0, name:fl.name}); touch(dv); render(); });
+      });
+      inp.click();
+    }
+  });
+  return card;
+}
+
 /* E1 : synchronisation avec un script Google (Drive + Sheets) */
 const SYNC_KEY = "endgo_sync_v2";
 let SYNC = {}; try{ SYNC = JSON.parse(localStorage.getItem(SYNC_KEY) || "{}") || {}; }catch(e){}
@@ -2529,6 +3090,7 @@ function mediaList(){
   DB.devis.forEach(d => { const c = d.chantier || {};
     (c.photos||[]).forEach(x => out.push({k:"ph_"+x.id, name:"ph_"+x.id+".jpg", rev:"1", desc:(d.titre||d.num)+" – "+x.phase+" – "+frDate(x.date)+(x.note?" – "+x.note:"")}));
     (c.croquis||[]).forEach(x => out.push({k:"sk_"+x.id, name:"sk_"+x.id+".json", rev:String(x.rev||1), desc:(d.titre||d.num)+" – "+x.titre}));
+    (c.fournPdf||[]).forEach(x => out.push({k:"pdf_"+x.id, name:"pdf_"+x.id+".pdf", rev:"1", desc:(d.titre||d.num)+" – devis "+x.fourn+(x.num?" n° "+x.num:"")}));
   });
   return out;
 }
