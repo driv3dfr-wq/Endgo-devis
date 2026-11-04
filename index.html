@@ -1524,8 +1524,37 @@ function showRecap(dv){
     {label:"Demande de prix fournisseur", onClick:()=>{ mailFournisseur(dv); }},
     {label:"Envoyer au client", cls:"blue", onClick:()=>{ mailClient(dv); }},
     {label:"Télécharger le devis", onClick:()=>{ downloadDevis(dv); }},
+    {label:"Envoyer à Donatien (plans)", onClick:()=>{ envoiDessin(dv); }},
     {label:"Fermer", cls:"ghost"}
   ]);
+}
+/* Fiche dessin : les infos utiles au chiffrage des plans (appli D-Riv 3D Metallerie de Donatien) */
+function ficheDessin(dv){
+  const cl = getClient(dv.clientId);
+  const ouvrages = dv.ouvrages.map(o => {
+    const Q = quantities(o), profils = [];
+    (o.sec.ossature||[]).forEach(ln => { if(ln.off) return; const pr = profil(ln.ref), mk = MLKEY[ln.tpl];
+      profils.push({label:ln.label, ref:ln.ref||"", ml: mk ? Q[mk]||0 : null, kg: pr && mk && Q[mk] ? Q[mk]*pr.kgm : null}); });
+    const keep = ["L","l","pente","Hlow","Hhigh","emprise","nbPortiques","nbPoteaux","nbLignesPannes","nbLignesLisses","potML","travML","panML","lisML","gcL","gcPoteaux","clotL","clotPoteaux","nbPortails","nbPortillons","bardBrut","couv"];
+    const q = {}; keep.forEach(k => { if(typeof Q[k]==="number" && isFinite(Q[k])) q[k] = Math.round(Q[k]*1000)/1000; });
+    const kg = profils.reduce((a,x) => a + (x.kg||0), 0);
+    return {name:o.name, type:o.type, typeLabel:TYPES[o.type].label, variant:o.variant||"", dim:dimText(o,Q), d:o.d, q, profils, kg:Math.round(kg),
+      potelets:num(o.d.potelets), entPort:num(o.d.entPort)||6, hauvents:(o.hauvents||[]).map(h => ({L:num(h.L), l:num(h.l)})),
+      ouvertures:(o.ouv||[]).map(x => ({type:OUV_TYPES[x.type], w:num(x.w), h:num(x.h), n:num(x.q)})),
+      tubes:(o.tubes||[]).map(x => ({sec:x.sec||"", ml:Math.round(tubeCalc(x).ml*100)/100, pieces:(x.pieces||[]).length})),
+      schema: TYPES[o.type].geo==="bat" ? schemaSvg(o) : ""};
+  });
+  return {format:"endgo-dessin", v:1, envoye:new Date().toISOString(), id:dv.id, num:dv.num, titre:dv.titre||"", date:dv.date,
+    client: cl ? {nom:clientName(cl), ville:cl.ville||""} : null, ouvrages, kg: ouvrages.filter(o => !o.variant).reduce((a,o) => a + o.kg, 0)};
+}
+async function envoiDessin(dv){
+  const f = ficheDessin(dv), name = "dessin-" + dv.num + ".json", txt = JSON.stringify(f);
+  try{
+    const file = new File([txt], name, {type:"application/json"});
+    if(navigator.canShare && navigator.canShare({files:[file]})){ await navigator.share({files:[file], title:"Plans " + dv.num, text:"Devis " + dv.num + " à dessiner"}); toast("Fiche dessin envoyée"); return; }
+  }catch(e){ if(e && e.name==="AbortError") return; }
+  download(name, txt, "application/json");
+  toast("Fiche dessin téléchargée : envoyez-la à Donatien");
 }
 function rentaHtml(t){
   const min = num(S("margeMin")), low = t.ht && t.pct < min;
