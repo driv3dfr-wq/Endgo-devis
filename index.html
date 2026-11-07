@@ -8,7 +8,7 @@
 <link rel="icon" href="icon-192.png">
 <link rel="apple-touch-icon" href="icon-192.png">
 <meta name="mobile-web-app-capable" content="yes">
-<title>ENDGO Devis V2</title>
+<title>ENDGO Devis V3</title>
 <style>
 :root{
   --bgfill:#05091A;
@@ -306,6 +306,71 @@ details>summary::before{content:"▸ ";color:var(--accent)}details[open]>summary
   nav.tabs button{font-size:.85rem}
   .top-row .sub{display:none}
 }
+/* V3 : chat IA */
+main.iamain{padding-bottom:170px}
+.iahead{display:flex;flex-direction:column;gap:10px;padding:12px}
+.iasel{display:flex;gap:8px;align-items:flex-end}
+.iasel .f{flex:1;min-width:0}
+.iasel .btn{flex:0 0 auto}
+.iatools{gap:6px}
+.iacost{margin-left:auto;font-variant-numeric:tabular-nums}
+.iamsgs{display:flex;flex-direction:column;gap:12px}
+.iawelcome{padding:8px 4px}
+.iawelcome p{margin:0 0 10px}
+.iasug{display:flex;flex-wrap:wrap;gap:8px}
+.iasug .btn{white-space:normal;text-align:left}
+.iamsg{display:flex;flex-direction:column;max-width:92%}
+.iamsg.me{align-self:flex-end;align-items:flex-end}
+.iamsg.ia{align-self:flex-start}
+.iabub{border-radius:16px;padding:10px 13px;line-height:1.45;overflow-wrap:anywhere}
+.iamsg.me .iabub{background:var(--royal);color:#fff;border-bottom-right-radius:5px}
+.iamsg.ia .iabub{background:var(--card);border:1px solid var(--line);border-bottom-left-radius:5px}
+.iabub p{margin:0 0 6px}.iabub p:last-child{margin-bottom:0}
+.iabub ul{margin:4px 0 8px;padding-left:20px}
+.iabub h4{margin:8px 0 4px;font-size:.95rem;color:var(--accent)}
+.iaattl{font-size:.78rem;opacity:.85;margin-top:4px}
+.iast{font-size:.75rem;color:var(--soft);margin-top:4px;text-align:right}
+.iast.err{color:var(--danger)}
+.iast .link{background:none;border:none;padding:0;color:inherit;text-decoration:underline;font-weight:700;cursor:pointer}
+.iafoot{display:flex;gap:8px;align-items:center;margin-top:4px;padding-left:4px}
+.iaspk{background:none;border:1px solid var(--line);border-radius:99px;padding:3px 9px;font-size:.85rem;color:var(--ink)}
+.iaspk.on{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
+.iadots{color:var(--soft);font-size:.9rem}
+.iadots i{font-style:normal;animation:iablink 1.2s infinite}.iadots i:nth-child(2){animation-delay:.2s}.iadots i:nth-child(3){animation-delay:.4s}
+@keyframes iablink{0%,100%{opacity:.2}50%{opacity:1}}
+.iaqcm{display:flex;flex-direction:column;gap:10px;margin-top:10px;padding-top:10px;border-top:1px solid var(--line)}
+.iaq p{margin:0 0 6px}
+.iachoix{display:flex;flex-wrap:wrap;gap:6px}
+.iach{border:1px solid var(--royal);background:transparent;color:var(--ink);border-radius:99px;padding:7px 12px;font-weight:600;font-size:.88rem;text-align:left}
+.iach.on{background:var(--royal);color:#fff}
+.iach:disabled{opacity:.5;border-color:var(--line)}
+.iaautre{margin-top:6px}
+.iaqcm>.btn{align-self:flex-start}
+.iaact{display:flex;gap:10px;align-items:center;justify-content:space-between;margin-top:10px;padding:10px;border:1px dashed var(--royal);border-radius:12px;background:var(--card2)}
+.iaact.done{border-style:solid;border-color:var(--ok)}
+.iaact .chip{margin:0;white-space:normal;max-width:55%}
+.iacomp{position:fixed;left:0;right:0;bottom:0;z-index:15;background:var(--solid);border-top:1px solid var(--line);box-shadow:0 -8px 24px rgba(0,0,0,.25);padding:8px max(12px,env(safe-area-inset-right,0px)) calc(8px + env(safe-area-inset-bottom,0px)) max(12px,env(safe-area-inset-left,0px))}
+.iacomp-in{max-width:1000px;margin:0 auto;display:flex;flex-direction:column;gap:6px}
+.iaopts{display:flex;gap:8px;align-items:center;flex-wrap:wrap;font-size:.82rem}
+.iafort{display:flex;gap:6px;align-items:center;color:var(--soft)}
+.iafort input{width:auto}
+.iafort small{color:var(--accent);font-weight:700}
+.iaatt{display:flex;gap:6px;flex-wrap:wrap}
+.iachip{background:var(--card2);border:1px solid var(--line);border-radius:99px;padding:2px 4px 2px 10px;font-size:.78rem}
+.iachip button{background:none;border:none;color:var(--soft);padding:0 6px}
+.iarow{display:flex;gap:6px;align-items:flex-end}
+.iarow textarea{flex:1;min-height:42px;max-height:160px;resize:none;border-radius:20px;padding:10px 14px}
+.iab{flex:0 0 42px;width:42px;height:42px;border-radius:50%;border:1px solid var(--line);background:var(--card2);color:var(--ink);font-size:1.25rem;line-height:1;display:flex;align-items:center;justify-content:center;padding:0}
+.iab.mic.on{background:var(--danger);border-color:var(--danger);animation:pulse 1s infinite}
+.iab .sq{display:block;width:14px;height:14px;background:#fff;border-radius:2px}
+.iab.send{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
+.iahist{display:flex;gap:8px;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid var(--line)}
+.iahist>div:first-child{min-width:0}
+.iaprev{display:flex;flex-direction:column;gap:10px}
+.iait{display:flex;flex-direction:column;gap:4px;padding:8px;border:1px solid var(--line);border-radius:10px}
+.iait.off{opacity:.5}
+.iait .btn{align-self:flex-start}
+@media (max-width:560px){.iasel{flex-direction:column;align-items:stretch}.iacost{margin-left:0;width:100%}}
 @media (prefers-reduced-motion:reduce){*{transition:none!important}}
 </style>
 </head>
@@ -313,7 +378,7 @@ details>summary::before{content:"▸ ";color:var(--accent)}details[open]>summary
 <header class="top"><div class="top-in">
   <div class="top-row">
     <img src="data:image/png;base64,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" alt="endgo">
-    <span class="v2">V2</span><span class="sub">Constructions métalliques &amp; métallerie</span>
+    <span class="v2">V3</span><span class="sub">Constructions métalliques &amp; métallerie</span>
     <span class="savestate" id="saveState"></span>
     <button class="iconbtn" id="menuBtn" type="button" aria-label="Menu">☰</button>
   </div>
@@ -324,6 +389,7 @@ details>summary::before{content:"▸ ";color:var(--accent)}details[open]>summary
     <button type="button" data-tab="chantier">Chantier</button>
     <button type="button" data-tab="checklist">Check-list</button>
     <button type="button" data-tab="prix">Prix <span class="lg">fourniture et pose</span></button>
+    <button type="button" data-tab="ia">Chat IA</button>
   </nav>
 </div></header>
 <main id="main"></main>
@@ -572,6 +638,7 @@ $("#menuBtn").addEventListener("click", e => {
     <button type="button" data-m="export">Exporter une sauvegarde (.json)</button>
     <button type="button" data-m="import">Importer une sauvegarde</button>
     <button type="button" data-m="sync">Synchronisation Google${syncOn()?" (active)":""}</button>
+    <button type="button" data-m="ia">IA : clé API et réglages</button>
   </div>`);
   m.addEventListener("click", ev => {
     const a = ev.target.dataset.m; m.remove();
@@ -579,6 +646,7 @@ $("#menuBtn").addEventListener("click", e => {
     if(a==="export") exportBackup();
     if(a==="import"){ $("#importFile").click(); }
     if(a==="sync") syncModal();
+    if(a==="ia") iaKeyModal();
   });
   $(".top-in").style.position="relative";
   $(".top-in").appendChild(m);
@@ -618,7 +686,7 @@ $("#importPrix").addEventListener("change", e => {
 });
 function render(){
   $$("#tabs button").forEach(b => b.classList.toggle("on", b.dataset.tab===DB.ui.tab));
-  const main = $("#main"); main.innerHTML = "";
+  const main = $("#main"); main.innerHTML = ""; main.classList.remove("iamain");
   $("#bar").hidden = true;
   backupBanner(main);
   if(DB.ui.tab==="accueil") renderAccueil(main);
@@ -626,6 +694,7 @@ function render(){
   else if(DB.ui.tab==="clients") renderClients(main);
   else if(DB.ui.tab==="devis") renderDevis(main);
   else if(DB.ui.tab==="prix") renderCatalog(main);
+  else if(DB.ui.tab==="ia") renderIA(main);
   else renderChecklist(main);
 }
 
@@ -670,6 +739,9 @@ function renderClients(main){
   });
   acts.appendChild(bSave);
   if(editing){
+    const bIA = el(`<button class="btn" type="button">Demander à l’IA</button>`);
+    bIA.addEventListener("click", () => { IA.sel = editing.id; IAS.conv = null; IAS.data = null; iaStore(); setTab("ia"); });
+    acts.appendChild(bIA);
     const bDev = el(`<button class="btn blue" type="button">Nouveau devis pour ce client</button>`);
     bDev.addEventListener("click", () => newDevis(editing.id));
     acts.appendChild(bDev);
@@ -1444,37 +1516,8 @@ function showRecap(dv){
     {label:"Demande de prix fournisseur", onClick:()=>{ mailFournisseur(dv); }},
     {label:"Envoyer au client", cls:"blue", onClick:()=>{ mailClient(dv); }},
     {label:"Télécharger le devis", onClick:()=>{ downloadDevis(dv); }},
-    {label:"Envoyer à Donatien (plans)", onClick:()=>{ envoiDessin(dv); }},
     {label:"Fermer", cls:"ghost"}
   ]);
-}
-/* Fiche dessin : les infos utiles au chiffrage des plans (appli D-Riv 3D Metallerie de Donatien) */
-function ficheDessin(dv){
-  const cl = getClient(dv.clientId);
-  const ouvrages = dv.ouvrages.map(o => {
-    const Q = quantities(o), profils = [];
-    (o.sec.ossature||[]).forEach(ln => { if(ln.off) return; const pr = profil(ln.ref), mk = MLKEY[ln.tpl];
-      profils.push({label:ln.label, ref:ln.ref||"", ml: mk ? Q[mk]||0 : null, kg: pr && mk && Q[mk] ? Q[mk]*pr.kgm : null}); });
-    const keep = ["L","l","pente","Hlow","Hhigh","emprise","nbPortiques","nbPoteaux","nbLignesPannes","nbLignesLisses","potML","travML","panML","lisML","gcL","gcPoteaux","clotL","clotPoteaux","nbPortails","nbPortillons","bardBrut","couv"];
-    const q = {}; keep.forEach(k => { if(typeof Q[k]==="number" && isFinite(Q[k])) q[k] = Math.round(Q[k]*1000)/1000; });
-    const kg = profils.reduce((a,x) => a + (x.kg||0), 0);
-    return {name:o.name, type:o.type, typeLabel:TYPES[o.type].label, variant:o.variant||"", dim:dimText(o,Q), d:o.d, q, profils, kg:Math.round(kg),
-      potelets:num(o.d.potelets), entPort:num(o.d.entPort)||6, hauvents:(o.hauvents||[]).map(h => ({L:num(h.L), l:num(h.l)})),
-      ouvertures:(o.ouv||[]).map(x => ({type:OUV_TYPES[x.type], w:num(x.w), h:num(x.h), n:num(x.q)})),
-      tubes:(o.tubes||[]).map(x => ({sec:x.sec||"", ml:Math.round(tubeCalc(x).ml*100)/100, pieces:(x.pieces||[]).length})),
-      schema: TYPES[o.type].geo==="bat" ? schemaSvg(o) : ""};
-  });
-  return {format:"endgo-dessin", v:1, envoye:new Date().toISOString(), id:dv.id, num:dv.num, titre:dv.titre||"", date:dv.date,
-    client: cl ? {nom:clientName(cl), ville:cl.ville||""} : null, ouvrages, kg: ouvrages.filter(o => !o.variant).reduce((a,o) => a + o.kg, 0)};
-}
-async function envoiDessin(dv){
-  const f = ficheDessin(dv), name = "dessin-" + dv.num + ".json", txt = JSON.stringify(f);
-  try{
-    const file = new File([txt], name, {type:"application/json"});
-    if(navigator.canShare && navigator.canShare({files:[file]})){ await navigator.share({files:[file], title:"Plans " + dv.num, text:"Devis " + dv.num + " à dessiner"}); toast("Fiche dessin envoyée"); return; }
-  }catch(e){ if(e && e.name==="AbortError") return; }
-  download(name, txt, "application/json");
-  toast("Fiche dessin téléchargée : envoyez-la à Donatien");
 }
 function rentaHtml(t){
   const min = num(S("margeMin")), low = t.ht && t.pct < min;
@@ -2572,7 +2615,7 @@ const CALC_TOOLS = {schema:toolSchema, nv:toolNV, predim:toolPredim, debit:toolD
   const btn = el(`<button type="button" class="micbtn" aria-label="Dicter dans ce champ" title="Dicter" hidden>🎤</button>`);
   document.body.appendChild(btn);
   let target = null, rec = null;
-  const ok = t => t && (t.tagName==="TEXTAREA" || (t.tagName==="INPUT" && ["text","search",""].includes(t.type||"") && !t.classList.contains("num") && t.getAttribute("inputmode")!=="decimal" && t.getAttribute("inputmode")!=="numeric"));
+  const ok = t => t && (t.tagName==="TEXTAREA" || (t.tagName==="INPUT" && ["text","search",""].includes(t.type||"") && !t.classList.contains("num") && t.getAttribute("inputmode")!=="decimal" && t.getAttribute("inputmode")!=="numeric") && !t.closest(".iacomp"));
   document.addEventListener("focusin", e => { if(ok(e.target)){ target = e.target; btn.hidden = false; } });
   document.addEventListener("focusout", () => setTimeout(() => { if(!rec && !ok(document.activeElement)) btn.hidden = true; }, 250));
   btn.addEventListener("pointerdown", e => e.preventDefault());
@@ -3118,10 +3161,10 @@ function syncRows(){
 const b64 = t => btoa(unescape(encodeURIComponent(t))), unb64 = t => decodeURIComponent(escape(atob(t)));
 function mediaList(){
   const out = [];
-  DB.devis.forEach(d => { const c = d.chantier || {};
-    (c.photos||[]).forEach(x => out.push({k:"ph_"+x.id, name:"ph_"+x.id+".jpg", rev:"1", desc:(d.titre||d.num)+" – "+x.phase+" – "+frDate(x.date)+(x.note?" – "+x.note:"")}));
-    (c.croquis||[]).forEach(x => out.push({k:"sk_"+x.id, name:"sk_"+x.id+".json", rev:String(x.rev||1), desc:(d.titre||d.num)+" – "+x.titre}));
-    (c.fournPdf||[]).forEach(x => out.push({k:"pdf_"+x.id, name:"pdf_"+x.id+".pdf", rev:"1", desc:(d.titre||d.num)+" – devis "+x.fourn+(x.num?" n° "+x.num:"")}));
+  DB.devis.forEach(d => { const c = d.chantier || {}, cl = getClient(d.clientId), client = cl ? {id:cl.id, nom:clientName(cl)} : null;
+    (c.photos||[]).forEach(x => out.push({k:"ph_"+x.id, name:"ph_"+x.id+".jpg", rev:"1", client, sub:"Photos et croquis", desc:(d.titre||d.num)+" – "+x.phase+" – "+frDate(x.date)+(x.note?" – "+x.note:"")}));
+    (c.croquis||[]).forEach(x => out.push({k:"sk_"+x.id, name:"sk_"+x.id+".json", rev:String(x.rev||1), client, sub:"Photos et croquis", desc:(d.titre||d.num)+" – "+x.titre}));
+    (c.fournPdf||[]).forEach(x => out.push({k:"pdf_"+x.id, name:"pdf_"+x.id+".pdf", rev:"1", client, sub:"Devis fournisseurs", desc:(d.titre||d.num)+" – devis "+x.fourn+(x.num?" n° "+x.num:"")}));
   });
   return out;
 }
@@ -3131,9 +3174,9 @@ async function syncMediaUp(){
     if(SYNC.media[m.name]===m.rev) continue;
     const v = await MEDIA.get(m.k); if(!v) continue;
     if(m.k.startsWith("sk_")){
-      await syncCall({action:"putMedia", name:m.name, data:"data:application/json;base64," + b64(JSON.stringify(v)), desc:m.desc});
-      if(v.png) await syncCall({action:"putMedia", name:m.name.replace(".json",".jpg"), data:v.png, desc:m.desc});
-    } else await syncCall({action:"putMedia", name:m.name, data:v, desc:m.desc});
+      await syncCall({action:"putMedia", name:m.name, data:"data:application/json;base64," + b64(JSON.stringify(v)), desc:m.desc, client:m.client, sub:m.sub});
+      if(v.png) await syncCall({action:"putMedia", name:m.name.replace(".json",".jpg"), data:v.png, desc:m.desc, client:m.client, sub:m.sub});
+    } else await syncCall({action:"putMedia", name:m.name, data:v, desc:m.desc, client:m.client, sub:m.sub});
     SYNC.media[m.name] = m.rev; syncStore();
   }
 }
@@ -3142,7 +3185,7 @@ async function syncMediaDown(){
   for(const m of mediaList()){
     const have = await MEDIA.get(m.k);
     if(have && SYNC.media[m.name]===m.rev) continue;
-    const r = await syncCall({action:"getMedia", name:m.name}); if(!r || !r.ok) continue;
+    const r = await syncCall({action:"getMedia", name:m.name, client:m.client, sub:m.sub}); if(!r || !r.ok) continue;
     await MEDIA.put(m.k, m.k.startsWith("sk_") ? JSON.parse(unb64(r.data.split(",")[1])) : r.data);
     SYNC.media[m.name] = m.rev; syncStore();
   }
@@ -3180,14 +3223,28 @@ async function syncNow(silent){
   try{
     const info = await syncCall({action:"info"});
     if(!info || !info.ok) throw new Error(info && info.err || "script injoignable");
+    SYNC.ia = !!info.ia; SYNC.v = info.v || 2; syncStore();
     const empty = !DB.clients.length && !DB.devis.length, localChanged = !empty && dataHash() !== SYNC.hash, remoteChanged = (info.version||"") !== (SYNC.version||"");
     if(remoteChanged && !localChanged) await syncPull();
     else if(remoteChanged && localChanged && info.version){ syncBusy = false; syncConflict(); return; }
     else if(localChanged){ if(await syncPush(false) === "conflict"){ syncBusy = false; syncConflict(); return; } }
     else await syncMediaUp();
     syncState("Synchronisé " + hhmm());
+    if(SYNC.v >= 3 && !SYNC.range) await syncRanger();
   }catch(e){ syncState("Synchro en échec"); if(!silent) toast("Synchro Google : " + e.message); }
   syncBusy = false;
+}
+/* V3 : range une fois les photos, croquis et PDF déjà envoyés dans le dossier Drive de leur client */
+async function syncRanger(){
+  let items = [];
+  mediaList().filter(m => m.client).forEach(m => { items.push({name:m.name, client:m.client, sub:m.sub}); if(m.k.startsWith("sk_")) items.push({name:m.name.replace(".json",".jpg"), client:m.client, sub:m.sub}); });
+  while(items.length){
+    const n = Math.min(150, items.length), r = await syncCall({action:"ranger", items:items.slice(0, n)});
+    if(!r || !r.ok) return;
+    const done = n - (r.reste || 0); if(done <= 0) return;
+    items = items.slice(done);
+  }
+  SYNC.range = 1; syncStore();
 }
 function syncSchedule(){
   if(!syncOn() || SYNC.auto===false) return;
@@ -3200,7 +3257,9 @@ function syncModal(){
     <label class="f"><span>Clé</span><input id="syK" value="${esc(SYNC.key||"")}" placeholder="donnée par le script à l’installation"></label>
     <label class="row small" style="gap:8px"><input type="checkbox" id="syA" ${SYNC.auto===false?"":"checked"} style="width:auto"> Synchroniser tout seul après chaque modification</label>
     <p class="syncst muted" id="syS">${SYNC.at ? "Dernière synchro : " + frDate(SYNC.at.slice(0,10)) + " " + SYNC.at.slice(11,16) + " (UTC)" : "Jamais synchronisé"}</p></div>`);
-  const read = () => { if(!HOSTED) SYNC.url = $("#syU", box).value.trim(); SYNC.key = $("#syK", box).value.trim(); SYNC.auto = $("#syA", box).checked; syncStore(); };
+  const read = () => { const ou = SYNC.url || "", ok = SYNC.key || ""; if(!HOSTED) SYNC.url = $("#syU", box).value.trim(); SYNC.key = $("#syK", box).value.trim(); SYNC.auto = $("#syA", box).checked;
+    if((ou || ok) && ((SYNC.url || "") !== ou || SYNC.key !== ok)){ SYNC.media = {}; SYNC.version = ""; SYNC.hash = ""; SYNC.range = 0; delete SYNC.ia; delete SYNC.at; } /* nouveau script (autre compte Google) : tout sera renvoyé, photos comprises */
+    syncStore(); };
   const st = t => $("#syS", box).textContent = t;
   const run = async (fn, okTxt) => { read(); if(!syncOn()){ st("Indiquez l’adresse et la clé"); return false; } st("En cours…"); try{ const r = await fn(); st(r==="conflict" ? "Conflit : choisissez quelles données garder" : r==="empty" ? "Rien sur Google pour l’instant : faites « Envoyer »" : okTxt); if(r==="conflict") syncConflict(); }catch(e){ st("Échec : " + (/fetch/i.test(e.message) ? "pas de connexion ou adresse incorrecte" : e.message)); } return false; };
   modal("Synchronisation Google", box, [
@@ -3209,6 +3268,572 @@ function syncModal(){
     {label:"Envoyer sur Google",cls:"primary",onClick:() => { run(() => syncPush(false), "Données envoyées sur Google"); return false; }},
     {label:"Fermer",cls:"ghost",onClick:() => { read(); }}]);
 }
+
+/* ================= V3 : onglet Chat IA ================= */
+/* La clé API Claude est rangée dans le script Google (jamais ici). Chaque message passe par l’action « ia » du script. */
+const IA_KEY = "endgo_ia_v3", USD_EUR = 0.92;
+let IA = {convs:[], mois:{}, stats:{}, alerte:"5", alerteMois:"", sel:""};
+try{ IA = Object.assign(IA, JSON.parse(localStorage.getItem(IA_KEY) || "{}")); }catch(e){}
+const IAS = {conv:null, data:null, fort:false, att:[], busy:false, rec:null, recStop:false, meteo:{}, speaking:null};
+function iaStore(){ try{ localStorage.setItem(IA_KEY, JSON.stringify(IA)); }catch(e){} }
+function iaBlank(){ return {api:[], view:[], ctxHash:"", memo:null, notes:[]}; }
+function iaSaveConv(){ if(IAS.conv && IAS.data) MEDIA.put("ia_" + IAS.conv.id, IAS.data); iaStore(); }
+function iaClient(){ return IA.sel ? getClient(IA.sel) : null; }
+function iaConvClient(){ return IAS.conv && IAS.conv.clientId ? getClient(IAS.conv.clientId) : null; }
+function ym(){ return today().slice(0,7); }
+function fmtC(c){ c = c || 0; return c < 100 ? (Math.round(c*10)/10).toLocaleString("fr-FR") + " c€" : fmt(c/100) + " €"; }
+function iaEst(kind){ const s = (IA.stats[kind] || []); if(!s.length) return ""; return "≈ " + fmtC(s.reduce((a,b) => a+b, 0) / s.length); }
+function iaDevisOf(c){
+  if(!c) return null;
+  const cur = curDevis(); if(cur && cur.clientId === c.id) return cur;
+  const l = DB.devis.filter(d => d.clientId === c.id); return l.length ? l[l.length-1] : null;
+}
+function iaNum(v){ const m = String(v == null ? "" : v).replace(/\s/g,"").match(/-?\d+(?:[.,]\d+)?/); return m ? m[0].replace(".", ",") : ""; }
+function iaMd(t){
+  let out = "", ul = false;
+  esc(t || "").split("\n").forEach(l => {
+    const b = l.replace(/\*\*(.+?)\*\*/g, "<b>$1</b>");
+    if(/^\s*[-•]\s+/.test(l)){ if(!ul){ out += "<ul>"; ul = true; } out += "<li>" + b.replace(/^\s*[-•]\s+/, "") + "</li>"; return; }
+    if(ul){ out += "</ul>"; ul = false; }
+    if(/^#{1,4}\s/.test(l)) out += "<h4>" + b.replace(/^#{1,4}\s/, "") + "</h4>"; else if(l.trim()) out += "<p>" + b + "</p>";
+  });
+  return out + (ul ? "</ul>" : "");
+}
+function iaPlain(res){ return String(res.texte || "").replace(/\*\*/g, "").replace(/^#{1,4}\s/gm, "") + (res.qcm || []).map(q => "\n" + q.question + " " + q.choix.join(", ")).join(""); }
+
+/* ---------- Contexte envoyé à l’IA ---------- */
+function iaCtxGeneral(){
+  const J = ["dimanche","lundi","mardi","mercredi","jeudi","vendredi","samedi"];
+  const postes = CAT_GROUPS.map(([g,t]) => t + " : " + catItems(g).map(x => x.label).join(", ")).join("\n");
+  return "[Contexte]\nDate du jour : " + J[new Date().getDay()] + " " + frDate(today()) + "\nClients enregistrés : " + (DB.clients.map(clientName).join(" ; ") || "aucun") + "\nPostes du catalogue (onglet Prix) :\n" + postes;
+}
+function iaCtxClient(c){
+  const L = [], cur = iaDevisOf(c);
+  L.push("Fiche client : " + CFIELDS.filter(f => has(c[f[0]])).map(f => f[1] + " = " + c[f[0]]).join(" ; "));
+  DB.devis.filter(d => d.clientId === c.id).forEach(dv => {
+    const t = devisTotals(dv);
+    L.push("\nDevis " + dv.num + (dv.titre ? " – " + dv.titre : "") + " (" + dv.statut + ", du " + frDate(dv.date) + ")" + (dv === cur ? " [devis en cours]" : "") + " : total HT " + fmt(t.ht) + " €, TTC " + fmt(t.ttc) + " €, bénéfice " + fmtQ(Math.round(t.pct)) + " %");
+    dv.ouvrages.forEach((o, i) => {
+      const a = activeLines(o);
+      L.push("  Ouvrage " + (i+1) + " « " + o.name + " » : " + TYPES[o.type].label + (o.variant ? " (option " + o.variant + ")" : "") + ". " + dimText(o, a.Q));
+      L.push("  Valeurs : " + Object.entries(o.d).filter(([k,v]) => has(v)).map(([k,v]) => k + "=" + v).join(", ") + (o.hauvents.length ? " ; hauvents : " + o.hauvents.map(h => h.L + "×" + h.l + " m pente " + h.pente + " %").join(", ") : "") + (o.ouv.length ? " ; ouvertures : " + o.ouv.map(x => x.q + " " + (OUV_TYPES[x.type]||x.type) + " " + x.w + "×" + x.h).join(", ") : "") + (o.fumi.on ? " ; fumidôme " + o.fumi.q : ""));
+      a.lines.forEach(x => L.push("   - " + lineLabel(x.L) + (has(x.L.data.ref) ? " (" + x.L.data.ref + ")" : "") + " : " + fmtQ(x.c.qty) + " " + x.c.unit + (x.c.total ? " = " + fmt(x.c.total) + " € HT" : " (sans prix)") + (x.L.data.fourn ? " – fournisseur " + x.L.data.fourn : "")));
+    });
+    const ch = dv.chantier || {};
+    const chl = [];
+    if(has(ch.debut)) chl.push("du " + frDate(ch.debut) + (has(ch.fin) ? " au " + frDate(ch.fin) : ""));
+    if(has(ch.equipe)) chl.push("équipe : " + ch.equipe);
+    if(has(ch.note)) chl.push("note : " + ch.note);
+    const h = (ch.heures || []).reduce((s,x) => s + num(x.h), 0); if(h) chl.push(fmtQ(h) + " h passées");
+    if(chl.length) L.push("  Chantier : " + chl.join(" ; "));
+    if((ch.photos||[]).length) L.push("  Photos : " + ch.photos.map(p => p.phase + " " + frDate(p.date) + (p.note ? " (" + p.note + ")" : "")).join(", "));
+    if((ch.croquis||[]).length) L.push("  Croquis : " + ch.croquis.map(s => s.titre).join(", "));
+    if((ch.fournPdf||[]).length) L.push("  Devis fournisseurs : " + ch.fournPdf.map(p => p.fourn + (p.num ? " n° " + p.num : "") + (p.total ? " " + fmt(p.total) + " € HT" : "")).join(" ; "));
+    if(dv.checklist){ const rest = []; dv.checklist.sections.forEach(s => s.items.forEach(it => { if(!it.done) rest.push(it.label); })); if(rest.length) L.push("  Check-list, reste à faire : " + rest.slice(0, 40).join(" ; ")); }
+    if((dv.iaIgnore||[]).length) L.push("  Ne plus signaler : " + dv.iaIgnore.join(" ; "));
+  });
+  const prev = IA.convs.filter(x => x.clientId === c.id && x.resume && (!IAS.conv || x.id !== IAS.conv.id)).slice(-5);
+  if(prev.length) L.push("\nConversations IA précédentes : " + prev.map(x => frDate(x.date) + " « " + (x.titre||"") + " » : " + x.resume.replace(/\n/g, " ")).join(" | "));
+  if(IAS.meteo[c.id]) L.push("\nMétéo du chantier : " + IAS.meteo[c.id]);
+  return L.join("\n");
+}
+async function iaMeteo(c){
+  const dv = c && iaDevisOf(c); if(!dv || IAS.meteo[c.id]) return;
+  try{
+    const st = await coordsOf(dv);
+    const r = await fetch(`https://api.open-meteo.com/v1/forecast?latitude=${st.lat}&longitude=${st.lon}&daily=wind_gusts_10m_max,wind_speed_10m_max,precipitation_sum,precipitation_probability_max&wind_speed_unit=kmh&timezone=Europe%2FParis&forecast_days=7`);
+    const m = await r.json(); if(!m.daily) return;
+    IAS.meteo[c.id] = m.daily.time.map((d,i) => frDate(d).slice(0,5) + " rafales " + Math.round(m.daily.wind_gusts_10m_max[i]) + " km/h, pluie " + fmtQ(m.daily.precipitation_sum[i]) + " mm (" + m.daily.precipitation_probability_max[i] + " %)").join(" ; ") + " (seuil de levage " + (num(S("ventLevage")) || 50) + " km/h)";
+  }catch(e){}
+}
+
+/* ---------- Envoi ---------- */
+function iaBlocks(pre, att, text){
+  const b = [];
+  if(pre.length) b.push({type:"text", text:pre.join("\n\n")});
+  att.forEach(a => {
+    if(a.kind === "image") b.push({type:"image", source:{type:"base64", media_type:a.mt, data:a.data}});
+    else if(a.kind === "pdf") b.push({type:"document", source:{type:"base64", media_type:"application/pdf", data:a.data}, title:a.label});
+    else b.push({type:"text", text:a.data});
+  });
+  b.push({type:"text", text:text || "(voir la pièce jointe)"});
+  return b;
+}
+async function iaSend(text){
+  text = (text || "").trim();
+  if(!text && !IAS.att.length) return;
+  if(!syncOn()){ toast("Réglez d’abord la synchronisation Google (menu ☰)"); return; }
+  if(IAS.busy){ toast("L’IA répond encore, patientez"); return; }
+  const c = iaClient();
+  if(!IAS.conv){
+    IAS.conv = {id:uid(), titre:"", clientId:c ? c.id : "", date:today(), cents:0};
+    IA.convs.push(IAS.conv); IAS.data = iaBlank();
+    if(IA.convs.length > 80){ IA.convs.splice(0, IA.convs.length - 80).forEach(x => MEDIA.del("ia_" + x.id)); }
+  }
+  const d = IAS.data, pre = [];
+  if(!d.api.length && !d.view.some(m => m.role === "user")){
+    pre.push(iaCtxGeneral());
+    if(c){ const cx = iaCtxClient(c); pre.push("[Dossier client]\n" + cx); d.ctxHash = hashStr(cx); }
+  } else if(c){
+    const cx = iaCtxClient(c), h = hashStr(cx);
+    if(h !== d.ctxHash){ pre.push("[Dossier mis à jour]\n" + cx); d.ctxHash = h; }
+  }
+  if(d.notes.length){ pre.push(d.notes.map(n => "[Appliqué] " + n).join("\n")); d.notes = []; }
+  const kind = IAS.fort ? "fort" : IAS.att.some(a => a.kind !== "text") ? "piece" : "base";
+  const msg = {role:"user", text, att:IAS.att.map(a => a.label), blocks:iaBlocks(pre, IAS.att, text), fort:IAS.fort, kind, status:"wait"};
+  d.view.push(msg); IAS.att = []; IAS.fort = false;
+  const ta = $("#iaIn"); if(ta){ ta.value = ""; iaGrow(ta); }
+  iaSaveConv(); iaDraw();
+  await iaFlush();
+}
+async function iaFlush(){
+  if(!IAS.data || IAS.busy) return;
+  for(const m of IAS.data.view){ if(m.role === "user" && m.status === "wait"){ const ok = await iaPost(m); if(!ok) break; } }
+}
+async function iaPost(msg){
+  const d = IAS.data, conv = IAS.conv;
+  if(!navigator.onLine){ msg.status = "wait"; iaSaveConv(); iaDraw(); return false; }
+  IAS.busy = true; msg.status = "send"; iaDraw();
+  try{
+    if(d.memo === null){ const inf = await syncCall({action:"iaInfo", memo:true}); if(inf && inf.ok === false && /inconnue/.test(inf.err||"")) throw new Error("script Google à mettre à jour pour la V3 (voir le guide)"); d.memo = inf && inf.memoire || ""; }
+    d.api.push({role:"user", content:msg.blocks});
+    const c = getClient(conv.clientId);
+    const r = await syncCall({action:"ia", messages:d.api, memo:d.memo, fort:msg.fort, log:msg.text + (msg.att.length ? " [pièces jointes : " + msg.att.join(", ") + "]" : ""), conv:{id:conv.id, titre:conv.titre, docId:conv.docId||"", client:c ? {id:c.id, nom:clientName(c)} : null}});
+    if(!r || !r.ok){ d.api.pop(); throw new Error(r && r.err || "pas de réponse du script Google"); }
+    d.api.push({role:"assistant", content:r.content});
+    const cents = (r.usd || 0) * USD_EUR * 100;
+    d.view.push({role:"ia", res:r.result, cents, model:r.model, applied:{}});
+    msg.status = "ok"; delete msg.err; delete msg.blocks;
+    if(r.result.titre) conv.titre = r.result.titre;
+    if(r.result.resume) conv.resume = r.result.resume;
+    if(r.docId){ conv.docId = r.docId; conv.docUrl = r.docUrl; }
+    conv.cents = (conv.cents || 0) + cents;
+    IA.mois[ym()] = (IA.mois[ym()] || 0) + cents;
+    (IA.stats[msg.kind] = IA.stats[msg.kind] || []).push(cents); if(IA.stats[msg.kind].length > 8) IA.stats[msg.kind].shift();
+    IAS.busy = false; iaSaveConv(); iaDraw(); iaAlerte();
+    return true;
+  }catch(e){
+    if(d.api.length && d.api[d.api.length-1].content === msg.blocks) d.api.pop();
+    const net = /fetch|network|Failed|Load failed/i.test(e.message || "");
+    msg.status = net ? "wait" : "err"; msg.err = net ? "pas de réseau" : e.message;
+    IAS.busy = false; iaSaveConv(); iaDraw();
+    return false;
+  }
+}
+function iaAlerte(){
+  const lim = num(IA.alerte) * 100, tot = IA.mois[ym()] || 0;
+  if(lim > 0 && tot > lim && IA.alerteMois !== ym()){
+    IA.alerteMois = ym(); iaStore();
+    modal("Budget IA du mois dépassé", `<p style="margin:0">L’IA a coûté environ <b>${fmtC(tot)}</b> ce mois-ci, au-dessus de votre alerte de ${fmt(num(IA.alerte))} €. Vous pouvez changer ce montant dans le menu ☰ › IA : clé API et réglages.</p>`);
+  }
+}
+
+/* ---------- Affichage ---------- */
+function renderIA(main){
+  main.classList.add("iamain");
+  if(IAS.conv && IAS.conv.clientId !== IA.sel){ IAS.conv = null; IAS.data = null; }
+  if(IA.sel && !getClient(IA.sel)){ IA.sel = ""; iaStore(); }
+  const c = iaClient();
+  const head = el(`<section class="card iahead">
+    <div class="iasel"><label class="f"><span>Dossier</span><select id="iaSel"><option value="">Autre (sans client)</option>${DB.clients.slice().sort((a,b) => clientName(a).localeCompare(clientName(b))).map(x => `<option value="${x.id}" ${x.id===IA.sel?"selected":""}>${esc(clientName(x))}</option>`).join("")}</select></label>
+    <button class="btn primary" type="button" data-h="newcl">+ Créer fiche client</button></div>
+    <div class="row iatools"><button class="btn sm" type="button" data-h="new">Nouvelle conversation</button><button class="btn sm" type="button" data-h="hist">Historique</button><button class="btn sm" type="button" data-h="find" aria-label="Rechercher dans les conversations">🔍 Rechercher</button>${IAS.conv && IAS.conv.docUrl ? `<a class="btn sm" href="${esc(IAS.conv.docUrl)}" target="_blank" rel="noopener">Google Docs</a>` : ""}
+    <span class="muted small iacost" id="iaCost"></span></div></section>`);
+  main.appendChild(head);
+  if(!syncOn()) main.appendChild(el(`<section class="card"><p style="margin:0">Le chat IA passe par votre script Google, qui garde la clé API Claude. Réglez d’abord <b>la synchronisation Google</b>, puis <b>la clé API</b>, toutes deux dans le menu ☰ en haut à droite.</p></section>`));
+  else if(SYNC.ia === false) main.appendChild(el(`<section class="card"><p style="margin:0">Aucune clé API Claude n’est enregistrée pour l’instant. Ajoutez-la dans le menu ☰ › IA : clé API et réglages.</p></section>`));
+  main.appendChild(el(`<div id="iaMsgs" class="iamsgs"></div>`));
+  const comp = el(`<div class="iacomp"><div class="iacomp-in">
+    <div class="iaopts"><label class="iafort"><input type="checkbox" id="iaFort" ${IAS.fort?"checked":""}> Réfléchir plus <small>plus cher <span id="iaEstF"></span></small></label><span id="iaAtt" class="iaatt"></span></div>
+    <div class="iarow"><button type="button" class="iab" id="iaPlus" aria-label="Ajouter un document">+</button><button type="button" class="iab mic" id="iaMic" aria-label="Dicter">🎤</button>
+    <textarea id="iaIn" rows="1" placeholder="Écrivez ou dictez…"></textarea><button type="button" class="iab send" id="iaSend" aria-label="Envoyer">➤</button></div></div></div>`);
+  main.appendChild(comp);
+  $("#iaSel", head).addEventListener("change", e => { IA.sel = e.target.value; IAS.conv = null; IAS.data = null; iaStore(); render(); iaMeteo(iaClient()); });
+  head.addEventListener("click", e => { const b = e.target.closest("[data-h]"); if(!b) return; const a = b.dataset.h;
+    if(a === "new"){ IAS.conv = null; IAS.data = null; render(); }
+    if(a === "newcl"){ IA.sel = ""; IAS.conv = null; IAS.data = null; iaStore(); render(); iaSend("Je veux créer une nouvelle fiche client avec son projet (devis, fiche chantier, check-list). Pose-moi les questions nécessaires, je vais te décrire le projet."); }
+    if(a === "hist") iaHistory();
+    if(a === "find") iaFind();
+  });
+  const ta = $("#iaIn", comp);
+  ta.addEventListener("input", () => iaGrow(ta));
+  ta.addEventListener("keydown", e => { if(e.key === "Enter" && (e.ctrlKey || e.metaKey)){ e.preventDefault(); iaSend(ta.value); } });
+  $("#iaSend", comp).addEventListener("click", () => { if(IAS.rec){ IAS.recStop = true; IAS.rec.stop(); } iaSend(ta.value); });
+  $("#iaMic", comp).addEventListener("click", iaMic);
+  $("#iaPlus", comp).addEventListener("click", iaPlus);
+  $("#iaFort", comp).addEventListener("change", e => { IAS.fort = e.target.checked; });
+  if(IAS.conv && !IAS.data){ MEDIA.get("ia_" + IAS.conv.id).then(v => { IAS.data = v || iaBlank(); iaDraw(); }); }
+  iaDraw();
+  if(c) iaMeteo(c);
+}
+function iaGrow(ta){ ta.style.height = "auto"; ta.style.height = Math.min(ta.scrollHeight, 160) + "px"; }
+function iaDraw(){
+  const box = $("#iaMsgs"); if(!box) return;
+  const cost = $("#iaCost"); if(cost) cost.textContent = (IAS.conv ? "Conversation " + fmtC(IAS.conv.cents) + " · " : "") + "Ce mois " + fmtC(IA.mois[ym()]);
+  const ef = $("#iaEstF"); if(ef) ef.textContent = iaEst("fort");
+  const at = $("#iaAtt"); if(at){ at.innerHTML = IAS.att.map((a,i) => `<span class="iachip">${esc(a.label)} <button type="button" data-x="${i}" aria-label="Retirer">✕</button></span>`).join(""); $$("[data-x]", at).forEach(b => b.addEventListener("click", () => { IAS.att.splice(+b.dataset.x, 1); iaDraw(); })); }
+  const d = IAS.data, c = iaClient();
+  box.innerHTML = "";
+  if(!d || !d.view.length){
+    if(c){
+      const dv = iaDevisOf(c), sug = ["Résume-moi le dossier", "Qu’est-ce qui manque au devis ?", "Prépare l’ordre de mission", "Quels jours pour la pose selon la météo ?"];
+      if(dv && ((dv.chantier||{}).fournPdf||[]).length) sug.push("Compare les devis fournisseurs");
+      const w = el(`<div class="iawelcome"><p class="muted">Dossier <b>${esc(clientName(c))}</b>. L’IA voit la fiche, les devis, le chantier et les conversations précédentes de ce client.</p><div class="iasug">${sug.map(s => `<button type="button" class="btn sm">${esc(s)}</button>`).join("")}</div></div>`);
+      $$(".iasug button", w).forEach(b => b.addEventListener("click", () => iaSend(b.textContent)));
+      box.appendChild(w);
+    } else box.appendChild(el(`<div class="iawelcome"><p class="muted">Chat libre : posez n’importe quelle question, métier ou pas. Pour parler d’un dossier, choisissez le client en haut. Pour un nouveau client, touchez « + Créer fiche client ».</p></div>`));
+    return;
+  }
+  const lastIa = d.view.map(m => m.role).lastIndexOf("ia");
+  d.view.forEach((m, i) => box.appendChild(m.role === "user" ? iaUserEl(m, i) : iaIaEl(m, i, i === lastIa && i === d.view.length - 1)));
+  if(IAS.busy) box.appendChild(el(`<div class="iamsg ia"><span class="iadots">L’IA réfléchit<i>.</i><i>.</i><i>.</i></span></div>`));
+  requestAnimationFrame(() => window.scrollTo(0, document.body.scrollHeight));
+}
+function iaUserEl(m, i){
+  const e = el(`<div class="iamsg me"><div class="iabub">${esc(m.text).replace(/\n/g,"<br>")}${m.att.length ? `<div class="iaattl">📎 ${m.att.map(esc).join(", ")}</div>` : ""}</div>
+    ${m.status === "wait" ? `<div class="iast">En attente de réseau : envoi automatique au retour du réseau. <button type="button" class="link" data-r>Réessayer</button></div>` : ""}
+    ${m.status === "err" ? `<div class="iast err">Échec : ${esc(m.err||"")}. <button type="button" class="link" data-r>Réessayer</button> <button type="button" class="link" data-d>Supprimer</button></div>` : ""}</div>`);
+  const r = $("[data-r]", e); if(r) r.addEventListener("click", () => { m.status = "wait"; iaFlush(); });
+  const dl = $("[data-d]", e); if(dl) dl.addEventListener("click", () => { IAS.data.view.splice(i, 1); iaSaveConv(); iaDraw(); });
+  return e;
+}
+function iaIaEl(m, i, last){
+  const res = m.res || {};
+  const e = el(`<div class="iamsg ia"><div class="iabub">${iaMd(res.texte)}</div></div>`);
+  const bub = $(".iabub", e);
+  if((res.qcm||[]).length) bub.appendChild(iaQcmEl(res.qcm, last));
+  (res.actions||[]).forEach((a, ai) => {
+    const done = m.applied && m.applied[ai];
+    const card = el(`<div class="iaact ${done?"done":""}"><div><b>${esc(a.titre)}</b><br><span class="muted small">${a.items.length} élément${a.items.length>1?"s":""} à cocher</span></div>${done ? `<span class="chip g">${done === true ? "Appliqué" : esc(done)}</span>` : `<button type="button" class="btn sm blue">Voir et valider</button>`}</div>`);
+    const b = $("button", card); if(b) b.addEventListener("click", () => iaPreview(m, ai));
+    bub.appendChild(card);
+  });
+  const foot = el(`<div class="iafoot"><button type="button" class="iaspk" aria-label="Lire à voix haute">🔊</button><span class="muted small">${m.model && /opus/.test(m.model) ? "Réflexion poussée · " : ""}${fmtC(m.cents)}</span></div>`);
+  $(".iaspk", foot).addEventListener("click", ev => iaSpeak(iaPlain(res), ev.currentTarget));
+  e.appendChild(foot);
+  return e;
+}
+function iaQcmEl(qs, live){
+  const w = el(`<div class="iaqcm"></div>`), sel = qs.map(() => new Set()), autre = qs.map(() => "");
+  const single = qs.length === 1 && !qs[0].multiple;
+  const send = () => {
+    const parts = qs.map((q, k) => { const v = [...sel[k]].concat(autre[k].trim() ? [autre[k].trim()] : []); return v.length ? (qs.length === 1 ? v.join(", ") : q.question + " : " + v.join(", ")) : null; }).filter(Boolean);
+    if(!parts.length){ toast("Choisissez au moins une réponse"); return; }
+    iaSend(parts.join("\n"));
+  };
+  qs.forEach((q, k) => {
+    const blk = el(`<div class="iaq"><p><b>${esc(q.question)}</b>${q.multiple ? ' <span class="muted small">(plusieurs choix)</span>' : ""}</p><div class="iachoix"></div><div class="iaautre" hidden><input type="text" placeholder="Votre réponse"></div></div>`);
+    const zone = $(".iachoix", blk), box = $(".iaautre", blk), inp = $("input", box);
+    q.choix.concat(["Autre…"]).forEach(ch => {
+      const b = el(`<button type="button" class="iach" ${live?"":"disabled"}>${esc(ch)}</button>`);
+      b.addEventListener("click", () => {
+        if(ch === "Autre…"){ box.hidden = !box.hidden; b.classList.toggle("on", !box.hidden); if(!box.hidden) inp.focus(); return; }
+        if(q.multiple){ sel[k].has(ch) ? sel[k].delete(ch) : sel[k].add(ch); b.classList.toggle("on"); }
+        else { sel[k].clear(); sel[k].add(ch); $$(".iach", zone).forEach(x => x.classList.toggle("on", x === b)); if(single) send(); }
+      });
+      zone.appendChild(b);
+    });
+    inp.addEventListener("input", () => { autre[k] = inp.value; });
+    inp.addEventListener("keydown", ev => { if(ev.key === "Enter"){ ev.preventDefault(); send(); } });
+    w.appendChild(blk);
+  });
+  if(live){ const b = el(`<button type="button" class="btn sm primary">${single ? "Envoyer ma réponse" : "Envoyer mes réponses"}</button>`); b.addEventListener("click", send); w.appendChild(b); }
+  return w;
+}
+
+/* ---------- Micro, haut-parleur, pièces jointes ---------- */
+function iaMicUi(on){ const b = $("#iaMic"); if(!b) return; b.innerHTML = on ? '<span class="sq"></span>' : "🎤"; b.classList.toggle("on", on); b.setAttribute("aria-label", on ? "Arrêter la dictée" : "Dicter"); }
+function iaMic(){
+  const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+  if(!SR){ toast("Dictée indisponible sur ce navigateur"); return; }
+  if(IAS.rec){ IAS.recStop = true; IAS.rec.stop(); return; }
+  const ta = $("#iaIn"); if(!ta) return;
+  const base = ta.value.trim(); let finals = "";
+  const join = (x) => [base, finals, x].filter(s => s && s.trim()).join(" ").replace(/\s+/g, " ");
+  const start = () => {
+    let r; try{ r = new SR(); }catch(e){ toast("Dictée indisponible"); IAS.rec = null; iaMicUi(false); return; }
+    r.lang = "fr-FR"; r.continuous = true; r.interimResults = true;
+    r.onresult = ev => {
+      let interim = "";
+      for(let k = ev.resultIndex; k < ev.results.length; k++){ const t = ev.results[k][0].transcript.trim(); if(ev.results[k].isFinal) finals = (finals + " " + t).trim(); else interim += " " + t; }
+      ta.value = join(interim); iaGrow(ta);
+    };
+    r.onerror = ev => { if(ev.error === "not-allowed" || ev.error === "service-not-allowed"){ IAS.recStop = true; toast("Micro refusé : autorisez-le dans le navigateur"); } else if(ev.error === "network"){ IAS.recStop = true; toast("Dictée indisponible sans réseau"); } };
+    r.onend = () => { if(!IAS.recStop && IAS.rec === r){ start(); return; } if(IAS.rec === r){ IAS.rec = null; iaMicUi(false); ta.value = join(""); iaGrow(ta); } };
+    IAS.rec = r;
+    try{ r.start(); }catch(e){ IAS.rec = null; iaMicUi(false); }
+  };
+  IAS.recStop = false; iaMicUi(true); start();
+}
+function iaSpeak(text, btn){
+  const ss = window.speechSynthesis; if(!ss){ toast("Lecture à voix haute indisponible sur ce téléphone"); return; }
+  const was = IAS.speaking; ss.cancel(); if(was){ was.classList.remove("on"); IAS.speaking = null; if(was === btn) return; }
+  const u = new SpeechSynthesisUtterance(text); u.lang = "fr-FR";
+  const v = ss.getVoices().find(x => /^fr/i.test(x.lang)); if(v) u.voice = v;
+  u.onend = u.onerror = () => { btn.classList.remove("on"); if(IAS.speaking === btn) IAS.speaking = null; };
+  IAS.speaking = btn; btn.classList.add("on"); ss.speak(u);
+}
+function iaPlus(){
+  const c = iaClient(), dv = iaDevisOf(c), ch = (dv && dv.chantier) || {}, est = iaEst("piece");
+  const media = [];
+  if(c) DB.devis.filter(d => d.clientId === c.id).forEach(d => { const x = d.chantier || {};
+    (x.photos||[]).forEach(p => media.push({k:"ph_" + p.id, label:"Photo " + p.phase + " " + frDate(p.date), kind:"image"}));
+    (x.croquis||[]).forEach(s => media.push({k:"sk_" + s.id, label:"Croquis " + s.titre, kind:"sketch"}));
+    (x.fournPdf||[]).forEach(p => media.push({k:"pdf_" + p.id, label:"Devis " + p.fourn + (p.num ? " " + p.num : ""), kind:"pdf"})); });
+  const box = el(`<div style="display:flex;flex-direction:column;gap:8px"><p class="muted small" style="margin:0">Une photo ou un PDF coûte plus cher à lire qu’un message${est ? " (" + est + " par message en moyenne)" : ""}.</p>
+    <button type="button" class="btn" data-p="file">Photo ou fichier du téléphone (image, PDF)</button>
+    ${media.length ? `<p class="small" style="margin:6px 0 0"><b>Pièces du dossier</b></p>` + media.map((m,i) => `<button type="button" class="btn sm" data-m="${i}">${esc(m.label)}</button>`).join("") : (c ? `<p class="muted small" style="margin:0">Pas de photo, croquis ni PDF dans ce dossier.</p>` : "")}</div>`);
+  const md = modal("Ajouter à la question", box, [{label:"Fermer", cls:"ghost"}]);
+  $("[data-p=file]", box).addEventListener("click", () => {
+    const inp = el(`<input type="file" accept="image/*,application/pdf" hidden>`); document.body.appendChild(inp);
+    inp.addEventListener("change", async () => { const f = inp.files[0]; inp.remove(); if(!f) return;
+      try{
+        if(f.type === "application/pdf"){ if(f.size > 20e6){ toast("PDF trop lourd (20 Mo maximum)"); return; } const du = await new Promise((res, rej) => { const r = new FileReader(); r.onload = () => res(r.result); r.onerror = rej; r.readAsDataURL(f); }); IAS.att.push({kind:"pdf", label:f.name, data:du.split(",")[1]}); }
+        else { const du = await readPhoto(f); IAS.att.push({kind:"image", label:f.name || "Photo", mt:"image/jpeg", data:du.split(",")[1]}); }
+        md.remove(); iaDraw();
+      }catch(e){ toast("Fichier illisible"); }
+    });
+    inp.click();
+  });
+  $$("[data-m]", box).forEach(b => b.addEventListener("click", async () => {
+    const m = media[+b.dataset.m], v = await MEDIA.get(m.k);
+    if(!v){ toast("Pièce absente de ce téléphone : synchronisez d’abord"); return; }
+    const du = m.kind === "sketch" ? v.png : v;
+    if(!du){ toast("Croquis sans image"); return; }
+    const mt = (du.match(/^data:([^;]+)/) || [])[1] || "image/jpeg";
+    IAS.att.push({kind: mt === "application/pdf" ? "pdf" : "image", label:m.label, mt, data:du.split(",")[1]});
+    md.remove(); iaDraw();
+  }));
+}
+
+/* ---------- Historique, recherche, clé API ---------- */
+function iaOpen(meta){ IA.sel = meta.clientId || ""; IAS.conv = meta; IAS.data = null; iaStore(); if(DB.ui.tab !== "ia") setTab("ia"); else render(); }
+function iaHistory(){
+  const list = IA.convs.filter(x => (x.clientId || "") === IA.sel).slice().reverse();
+  const box = el(`<div style="display:flex;flex-direction:column;gap:8px">${list.length ? list.map((x,i) => `<div class="iahist"><div><b>${esc(x.titre || "Sans titre")}</b><br><span class="muted small">${frDate(x.date)} · ${fmtC(x.cents)}</span></div><div class="row"><button type="button" class="btn sm" data-o="${i}">Ouvrir</button>${x.docUrl ? `<a class="btn sm" href="${esc(x.docUrl)}" target="_blank" rel="noopener">Docs</a>` : ""}</div></div>`).join("") : `<p class="muted" style="margin:0">Pas encore de conversation ${IA.sel ? "pour ce client" : "sans client"} sur ce téléphone.</p>`}</div>`);
+  const md = modal("Conversations " + (IA.sel ? "de " + clientName(iaClient()) : "sans client"), box);
+  $$("[data-o]", box).forEach(b => b.addEventListener("click", () => { md.remove(); iaOpen(list[+b.dataset.o]); }));
+}
+function iaFind(){
+  if(!syncOn()){ toast("Réglez d’abord la synchronisation Google"); return; }
+  const box = el(`<div style="display:flex;flex-direction:column;gap:10px"><div class="row" style="flex-wrap:nowrap"><input id="iaQ" type="search" placeholder="ex. platine Martin"><button type="button" class="btn primary" id="iaQgo">Chercher</button></div><div id="iaQr" class="muted small">Cherche dans toutes les conversations IA enregistrées dans le Drive.</div></div>`);
+  modal("Rechercher dans les conversations", box);
+  const go = async () => {
+    const q = $("#iaQ", box).value.trim(), out = $("#iaQr", box); if(!q) return;
+    out.textContent = "Recherche…";
+    try{
+      const r = await syncCall({action:"chercher", q});
+      if(!r || !r.ok) throw new Error(r && r.err || "échec");
+      if(!r.res.length){ out.textContent = "Rien trouvé."; return; }
+      out.innerHTML = r.res.map((x,i) => `<div class="iahist"><div><b>${esc(x.titre)}</b><br><span class="small">${esc(x.date)} · …${esc(x.extrait)}…</span></div><div class="row"><a class="btn sm" href="${esc(x.url)}" target="_blank" rel="noopener">Ouvrir</a><button type="button" class="btn sm" data-j="${i}">Joindre à ma question</button></div></div>`).join("");
+      $$("[data-j]", out).forEach(b => b.addEventListener("click", async () => {
+        const x = r.res[+b.dataset.j]; b.textContent = "…";
+        try{ const id = (x.url.match(/\/d\/([^/]+)/) || [])[1]; const t = await syncCall({action:"texteDoc", id}); if(!t || !t.ok) throw new Error(); IAS.att.push({kind:"text", label:x.titre, data:"[Ancienne conversation : " + x.titre + "]\n" + t.texte}); b.textContent = "Jointe"; iaDraw(); }catch(e){ b.textContent = "Échec"; }
+      }));
+    }catch(e){ out.textContent = "Recherche impossible : " + e.message; }
+  };
+  $("#iaQgo", box).addEventListener("click", go);
+  $("#iaQ", box).addEventListener("keydown", e => { if(e.key === "Enter") go(); });
+}
+function iaKeyModal(){
+  if(!syncOn()){ modal("IA : clé API", `<p style="margin:0">Le chat IA passe par votre script Google, qui garde la clé API Claude. Réglez d’abord la synchronisation Google (menu ☰ › Synchronisation Google).</p>`); return; }
+  const box = el(`<div style="display:flex;flex-direction:column;gap:10px">
+    <p class="small" id="ikS" style="margin:0">Vérification de la clé…</p>
+    <label class="f"><span>Nouvelle clé API Claude</span><input id="ikK" type="password" autocomplete="off" placeholder="sk-ant-…"></label>
+    <p class="muted small" style="margin:0">La clé est envoyée une seule fois à votre script Google et rangée là-bas. Elle n’est pas gardée sur ce téléphone.</p>
+    <label class="f"><span>Alerte quand l’IA dépasse ce montant dans le mois (€)</span><input id="ikA" inputmode="decimal" value="${esc(IA.alerte)}"></label>
+    <p class="muted small" style="margin:0">Ce mois-ci : ${fmtC(IA.mois[ym()])}. Messages normaux : Claude Sonnet 5.5 (rapide). « Réfléchir plus » : Claude Opus 5.5. Coûts convertis en euros au taux de ${String(USD_EUR).replace(".",",")} € pour 1 $.</p></div>`);
+  const st = t => { $("#ikS", box).textContent = t; };
+  syncCall({action:"iaInfo"}).then(r => { if(r && r.ok){ SYNC.ia = r.cle; syncStore(); st(r.cle ? "Clé enregistrée sur Google (se termine par …" + r.fin + ")." : "Aucune clé enregistrée pour l’instant."); } else st(/inconnue/.test(r && r.err || "") ? "Le script Google doit être mis à jour pour la V3 (voir le guide)." : "Script injoignable : " + (r && r.err || "")); }).catch(() => st("Pas de connexion au script Google."));
+  const saveA = () => { IA.alerte = $("#ikA", box).value.trim() || "0"; iaStore(); };
+  modal("IA : clé API et réglages", box, [
+    {label:"Supprimer la clé", cls:"ghost danger", onClick:() => { saveA(); confirmBox("Supprimer la clé API du script Google ? Le chat IA ne marchera plus jusqu’à la prochaine clé.", "Supprimer", () => syncCall({action:"supCle"}).then(() => { SYNC.ia = false; syncStore(); toast("Clé supprimée"); })); }},
+    {label:"Enregistrer", cls:"primary", onClick:() => { saveA(); const k = $("#ikK", box).value.trim(); if(!k){ toast("Réglages enregistrés"); return; } st("Vérification de la clé auprès de Claude…");
+      syncCall({action:"setCle", cle:k}).then(r => { if(r && r.ok){ $("#ikK", box).value = ""; SYNC.ia = true; syncStore(); st("Clé enregistrée sur Google (se termine par …" + r.fin + ")."); toast("Clé API enregistrée"); } else st("Échec : " + (r && r.err || "réponse inattendue")); }).catch(e => st("Échec : " + e.message));
+      return false; }},
+    {label:"Fermer", cls:"ghost", onClick:saveA}]);
+}
+
+/* ---------- Actions proposées par l’IA : aperçu à cases à cocher puis application ---------- */
+function iaPreview(m, ai){
+  const a = m.res.actions[ai], conv = IAS.conv, c = getClient(conv.clientId);
+  const needClient = ["note_client","modifier_devis","taches","message_client","oublis"].includes(a.type);
+  if(needClient && !c){ toast("Choisissez d’abord le client en haut, puis redemandez"); return; }
+  const items = a.items.map(x => Object.assign({}, x, {on:true}));
+  const long = it => String(it.valeur||"").length > 40 || /\n/.test(it.valeur||"");
+  const box = el(`<div class="iaprev"><p class="muted small" style="margin:0">Décochez ce que vous ne voulez pas. Vous pouvez corriger les valeurs avant de valider.</p></div>`);
+  items.forEach((it, k) => {
+    const row = el(`<div class="iait"><label class="check"><input type="checkbox" checked> <b>${esc(it.libelle || it.cle)}</b></label>${long(it) ? `<textarea rows="3">${esc(it.valeur)}</textarea>` : `<input type="text" value="${esc(it.valeur)}">`}${a.type === "oublis" ? `<button type="button" class="btn sm ghost" data-ign>Ne plus signaler</button>` : ""}</div>`);
+    $("input[type=checkbox]", row).addEventListener("change", e => { it.on = e.target.checked; row.classList.toggle("off", !it.on); });
+    $("textarea, input[type=text]", row).addEventListener("input", e => { it.valeur = e.target.value; });
+    const ig = $("[data-ign]", row); if(ig) ig.addEventListener("click", () => { const dv = iaDevisOf(c); if(!dv) return; dv.iaIgnore = dv.iaIgnore || []; if(!dv.iaIgnore.includes(it.libelle)) dv.iaIgnore.push(it.libelle); touch(dv); it.on = false; row.remove(); toast("Ne sera plus signalé pour ce devis"); });
+    box.appendChild(row);
+  });
+  modal(a.titre, box, [{label:"Annuler", cls:"ghost"}, {label:"Valider", cls:"primary", onClick:() => {
+    const sel = items.filter(x => x.on);
+    if(!sel.length){ toast("Rien n’est coché"); return false; }
+    let r;
+    try{ r = iaApply(a, sel, c); }catch(e){ toast(e.message); return false; }
+    Promise.resolve(r).then(note => { m.applied[ai] = true; IAS.data.notes.push(a.titre + " : " + (note || sel.length + " élément(s)")); iaSaveConv(); iaDraw(); }).catch(e => toast(e.message));
+  }}]);
+}
+function iaParse(items){
+  const P = {client:{}, devis:{}, ch:{}, o:{}};
+  items.forEach(it => {
+    const k = String(it.cle || "").trim(); let m, q;
+    if((m = k.match(/^client\.(\w+)$/))) P.client[m[1]] = it.valeur;
+    else if((m = k.match(/^devis\.(\w+)$/))) P.devis[m[1]] = it.valeur;
+    else if((m = k.match(/^chantier\.(\w+)$/))) P.ch[m[1]] = it.valeur;
+    else if((m = k.match(/^o(\d+)\.(.+)$/))){
+      const o = P.o[m[1]] = P.o[m[1]] || {d:{}, hv:{}, ouv:{}, lignes:[]}, r = m[2];
+      if(r === "type") o.type = it.valeur; else if(r === "nom") o.nom = it.valeur; else if(r === "fumidome") o.fumi = it.valeur;
+      else if((q = r.match(/^hauvent(\d+)\.(\w+)$/))) (o.hv[q[1]] = o.hv[q[1]] || {})[q[2]] = it.valeur;
+      else if((q = r.match(/^ouv(\d+)\.(\w+)$/))) (o.ouv[q[1]] = o.ouv[q[1]] || {})[q[2]] = it.valeur;
+      else if(r === "ligne") o.lignes.push(it);
+      else o.d[r] = it.valeur;
+    }
+  });
+  return P;
+}
+function iaAddLine(o, label, val){
+  const v = String(val || "").replace(/m2\b/g, "m²").replace(/ml\b/g, " ml ");
+  const nums = v.replace(/m²/g, " ").match(/-?\d+(?:[.,]\d+)?/g) || [];
+  const unit = ["m²","ml","kg","forfait","jour","h","u"].find(u => new RegExp("(^|\\s|\\d)" + u + "(\\s|$)").test(v)) || "u";
+  const sec = o.sec.commun ? "commun" : Object.keys(o.sec)[0];
+  o.sec[sec].push({id:uid(), label:String(label || "Ligne").trim(), unit, nu:unit, unitSet:true, f:null, list:null, off:false, ref:"", qty:nums[0] ? nums[0].replace(".", ",") : "", pu:nums[1] ? nums[1].replace(".", ",") : "", chute:"", marge:"", custom:true});
+}
+function iaOuvrages(dv, P){
+  Object.keys(P.o).map(Number).sort((a,b) => a-b).forEach(n => {
+    const s = P.o[n]; let o = dv.ouvrages[n-1];
+    if(!o){ const ty = TYPES[String(s.type||"").trim()] ? String(s.type).trim() : "complet"; o = newOuvrage(ty, dv.ouvrages.length + 1); dv.ouvrages.push(o); }
+    if(has(s.nom)) o.name = String(s.nom).trim();
+    Object.entries(s.d).forEach(([k,v]) => { if(k === "toit"){ const t = String(v).trim(); if(TOITS[t]) o.d.toit = t; } else if(k in o.d) o.d[k] = iaNum(v); });
+    if(has(s.fumi)){ o.fumi.on = num(iaNum(s.fumi)) > 0; o.fumi.q = iaNum(s.fumi) || "1"; }
+    Object.keys(s.hv).sort().forEach(k => { const h = s.hv[k]; o.hauvents.push({id:uid(), L:iaNum(h.L) || o.d.L || "", l:iaNum(h.l) || "3", pente:iaNum(h.pente) || "10"}); });
+    Object.keys(s.ouv).sort().forEach(k => { const x = s.ouv[k], t = String(x.type||"").trim(); o.ouv.push({id:uid(), type:OUV_TYPES[t] ? t : "sect", w:iaNum(x.w) || "4", h:iaNum(x.h) || "4", q:iaNum(x.q) || "1"}); });
+    s.lignes.forEach(it => iaAddLine(o, it.libelle, it.valeur));
+  });
+}
+function iaClientFrom(P, base){
+  const c = base || {id:uid(), created:today(), type:"particulier"};
+  Object.entries(P.client).forEach(([k,v]) => { if(CFIELDS.some(f => f[0] === k) && has(v) && (!base || !has(c[k]) || k === "notes")) c[k] = k === "notes" && base && has(c.notes) ? c.notes + "\n" + v : String(v).trim(); });
+  if(!["particulier","pro"].includes(c.type)) c.type = has(c.societe) ? "pro" : "particulier";
+  if(!has(c.nom) && !has(c.societe)) c.nom = "Client (créé par l’IA)";
+  if(!base) DB.clients.push(c);
+  return c;
+}
+function iaHtml(titre, c, corps){
+  return `<html><head><meta charset="utf-8"><style>body{font-family:Arial,sans-serif;font-size:11pt;color:#121A33}h1{font-size:18pt;color:#0D2C82;border-bottom:2px solid #E8730C;padding-bottom:4px;margin:0 0 6px}h2{font-size:12.5pt;color:#0D2C82;margin:14px 0 4px}p{margin:0 0 6px}.meta{color:#66708A;font-size:9.5pt;margin-bottom:12px}table{border-collapse:collapse;width:100%}td,th{border:1px solid #C9D0DE;padding:5px 6px;text-align:left;font-size:10pt}th{background:#EEF2FA}</style></head><body><h1>${esc(titre)}</h1><p class="meta">${c ? esc(clientName(c)) + (chantierAdresse(c) ? " · " + esc(chantierAdresse(c)) : "") + " · " : ""}${frDate(today())}</p>${corps}</body></html>`;
+}
+const iaTxt = t => esc(t || "").replace(/\n/g, "<br>");
+async function iaPdf(titre, c, corps){
+  toast("Création du PDF dans le Drive…");
+  const html = iaHtml(titre, c, corps);
+  try{
+    const r = await syncCall({action:"pdf", html, nom:titre + " – " + frDate(today()).replace(/\//g,"-"), client:c ? {id:c.id, nom:clientName(c)} : null});
+    if(!r || !r.ok) throw new Error(r && r.err || "échec");
+    modal("PDF enregistré", `<p style="margin:0 0 10px">« ${esc(titre)} » est dans le Drive${c ? ", dossier Documents du client" : ", dossier Documents IA"}.</p><a class="btn primary" href="${esc(r.url)}" target="_blank" rel="noopener">Ouvrir le PDF</a>`);
+    return "PDF « " + titre + " » enregistré dans le Drive";
+  }catch(e){
+    download(slug(titre) + ".html", html, "text/html;charset=utf-8");
+    toast("PDF impossible (" + e.message + ") : document téléchargé en HTML à la place");
+    return "document « " + titre + " » téléchargé en HTML";
+  }
+}
+function iaApply(a, items, c){
+  const P = iaParse(items), val = k => (items.find(x => x.cle === k) || {}).valeur || "";
+  switch(a.type){
+    case "creer_client": {
+      const nc = iaClientFrom(P, null); saveNow(); render();
+      return "fiche client créée : " + clientName(nc);
+    }
+    case "creer_projet": {
+      const cl = iaClientFrom(P, c || null);
+      const d = {id:uid(), num:nextNum(), clientId:cl.id, titre:String(P.devis.titre || "").trim(), date:today(), statut:"Brouillon", tva:"20", ouvrages:[], checklist:null, updated:today(), dates:{}, log:[]};
+      iaOuvrages(d, P); if(!d.ouvrages.length) d.ouvrages.push(newOuvrage("complet", 1));
+      const ch = chOf(d); ["note","debut","fin","equipe"].forEach(k => { if(has(P.ch[k])) ch[k] = String(P.ch[k]).trim(); });
+      logDv(d, "Créé depuis le chat IA");
+      DB.devis.push(d); DB.ui.devisId = d.id;
+      generateChecklist(d); saveNow();
+      return "fiche " + clientName(cl) + ", devis " + d.num + " (" + d.ouvrages.length + " ouvrage" + (d.ouvrages.length > 1 ? "s" : "") + "), fiche chantier et check-list créés";
+    }
+    case "modifier_devis": {
+      const dv = iaDevisOf(c); if(!dv) throw new Error("Ce client n’a pas encore de devis");
+      if(has(P.devis.titre)) dv.titre = String(P.devis.titre).trim();
+      iaOuvrages(dv, P); logDv(dv, "Modifié depuis le chat IA"); touch(dv); render();
+      return "devis " + dv.num + " modifié (" + items.length + " changement" + (items.length > 1 ? "s" : "") + ")";
+    }
+    case "note_client": {
+      const add = items.map(x => x.valeur || x.libelle).filter(has).join("\n");
+      c.notes = (has(c.notes) ? c.notes + "\n" : "") + frDate(today()) + " : " + add; saveNow();
+      return "ajouté à la note de " + clientName(c);
+    }
+    case "taches": {
+      const dv = iaDevisOf(c); if(!dv) throw new Error("Ce client n’a pas encore de devis, donc pas de check-list");
+      dv.checklist = dv.checklist || {title:"Check-list " + dv.num, sections:[]};
+      let s = dv.checklist.sections.find(x => x.title === "À faire (IA)");
+      if(!s){ s = {id:uid(), title:"À faire (IA)", note:"", items:[]}; dv.checklist.sections.push(s); }
+      items.forEach(x => s.items.push(clItem(x.libelle + (has(x.valeur) ? " – " + x.valeur : ""))));
+      touch(dv);
+      return items.length + " tâche" + (items.length > 1 ? "s" : "") + " ajoutée" + (items.length > 1 ? "s" : "") + " à la check-list";
+    }
+    case "rdv": {
+      const date = (val("date").match(/\d{4}-\d{2}-\d{2}/) || [today()])[0], h = val("heure").match(/(\d{1,2})[:h](\d{2})?/);
+      const p = s => String(s).padStart(2, "0"), ds = date.replace(/-/g, "");
+      let dates;
+      if(h){ const st = new Date(date + "T" + p(h[1]) + ":" + p(h[2] || "0") + ":00"), en = new Date(st.getTime() + (num(val("duree")) || 60) * 60000); const f = x => x.getFullYear() + p(x.getMonth()+1) + p(x.getDate()) + "T" + p(x.getHours()) + p(x.getMinutes()) + "00"; dates = f(st) + "/" + f(en); }
+      else dates = ds + "/" + icsDate(date, 1);
+      const url = "https://calendar.google.com/calendar/render?action=TEMPLATE&text=" + encodeURIComponent(val("titre") || a.titre) + "&dates=" + dates + "&ctz=Europe%2FParis&details=" + encodeURIComponent(val("details")) + "&location=" + encodeURIComponent(val("lieu"));
+      window.open(url, "_blank");
+      return "rendez-vous du " + frDate(date) + " ouvert dans Google Agenda";
+    }
+    case "message_client": {
+      const canal = (val("canal") || "mail").toLowerCase(), corps = val("corps"), objet = val("objet");
+      if(canal.startsWith("mail")){ if(!has(c.email)) throw new Error("Pas d’email sur la fiche client"); openMail(c.email, objet, corps); return "mail préparé pour " + c.email; }
+      if(!has(c.tel)) throw new Error("Pas de téléphone sur la fiche client");
+      if(canal.startsWith("whats")){ window.open("https://wa.me/" + phoneIntl(c.tel) + "?text=" + encodeURIComponent(corps), "_blank"); return "message WhatsApp préparé"; }
+      goUrl("sms:" + c.tel.replace(/\s/g, "") + "?body=" + encodeURIComponent(corps)); return "SMS préparé";
+    }
+    case "prix_catalogue": {
+      const all = CAT_GROUPS.flatMap(([g]) => catItems(g)), done = [], miss = [];
+      items.forEach(x => {
+        const n = pdfNorm(x.libelle);
+        const it = all.find(y => pdfNorm(y.label) === n) || all.find(y => { const z = pdfNorm(y.label); return z && n && (z.includes(n) || n.includes(z)); });
+        if(!it){ miss.push(x.libelle); return; }
+        const cat = DB.catalog[it.key] = Object.assign({unit:it.unit}, DB.catalog[it.key] || {});
+        const pv = iaNum(x.valeur); if(!pv){ miss.push(x.libelle); return; }
+        if(x.cle === "pose") cat.mpu = pv; else cat.pu = pv;
+        done.push(it.label);
+      });
+      saveNow(); if(miss.length) toast("Poste introuvable : " + miss.join(", "));
+      return done.length ? "prix mis à jour : " + done.join(", ") : "aucun prix mis à jour";
+    }
+    case "materiel": {
+      const rows = items.map(x => `<tr><td>${esc(x.libelle)}</td><td>${esc(x.valeur)}</td></tr>`).join("");
+      return iaPdf(a.titre || "Liste de matériel", c, `<table><thead><tr><th>Désignation</th><th>Quantité – fournisseur</th></tr></thead><tbody>${rows}</tbody></table>`);
+    }
+    case "ordre_mission": {
+      const dest = /sous/i.test(val("destinataire")) ? "sous-traitant" : "équipe de pose";
+      const corps = items.filter(x => x.cle !== "destinataire").map(x => `<h2>${esc(x.libelle || x.cle)}</h2><p>${iaTxt(x.valeur)}</p>`).join("");
+      return iaPdf("Ordre de mission – " + dest, c, corps);
+    }
+    case "pdf": {
+      return iaPdf(a.titre || "Document", c, items.map(x => `<h2>${esc(x.libelle)}</h2><p>${iaTxt(x.valeur)}</p>`).join(""));
+    }
+    case "memoire": {
+      return syncCall({action:"memoire", lignes:items.map(x => x.valeur || x.libelle)}).then(r => { if(!r || !r.ok) throw new Error(r && r.err || "mémoire injoignable"); return "retenu dans la mémoire ENDGO"; });
+    }
+    case "oublis": {
+      const dv = iaDevisOf(c); if(!dv) throw new Error("Ce client n’a pas encore de devis");
+      const o = dv.ouvrages.find(x => !x.variant) || dv.ouvrages[0]; if(!o) throw new Error("Le devis n’a pas d’ouvrage");
+      items.forEach(x => iaAddLine(o, x.libelle, ""));
+      logDv(dv, "Oublis ajoutés depuis le chat IA"); touch(dv);
+      return items.length + " ligne" + (items.length > 1 ? "s" : "") + " ajoutée" + (items.length > 1 ? "s" : "") + " au devis " + dv.num + " (prix à compléter)";
+    }
+  }
+  throw new Error("Action inconnue");
+}
+window.addEventListener("online", () => { if(IAS.data) iaFlush(); });
 
 /* ================= Démarrage ================= */
 function migrate(){
