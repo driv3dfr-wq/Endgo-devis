@@ -423,9 +423,9 @@ const TYPES = {
   froid:{label:"Chambre froide / panneaux frigo",geo:"boite",sections:["froid","commun"]},
   mezz:{label:"Mezzanine / plancher",geo:"plan",sections:["mezz","commun"]},
   auvent:{label:"Auvent / préau / carport",geo:"bat",sections:["ossature","couverture","commun"],toit:"1p"},
-  gc:{label:"Garde-corps",geo:"lin",sections:["gc","commun"]},
+  gc:{label:"Garde-corps",geo:"lin",sections:["gc","tubes","commun"]},
   escalier:{label:"Escalier (à définir)",geo:"none",sections:["escalier","commun"]},
-  portail:{label:"Portail / clôture",geo:"cloture",sections:["portail","commun"]},
+  portail:{label:"Portail / clôture",geo:"cloture",sections:["portail","tubes","commun"]},
   soustraite:{label:"Bâtiment sous-traité",geo:"plan",sections:["soustraite"]},
   metal:{label:"Métallerie : tubes (chariot, cadre, petit ouvrage)",geo:"tubes",sections:["tubes","metalMo","commun"]},
   autre:{label:"Autre",geo:"plan",sections:["libre","commun"]}
@@ -794,7 +794,7 @@ function newDevis(clientId){
 }
 function newOuvrage(type, n){
   const o = {id:uid(), name:"Ouvrage "+(n||1), type, open:true,
-    d:{L:"",l:"",H:"",toit:(TYPES[type].toit||"2p"),pente:"10",Hav:"",Har:"",deb:"0",nbEP:"",entPort:"6",entPannes:"1,5",entLisses:"1,5",potelets:"0",gcL:"",gcH:"1",clotL:"",nbPortails:"1",nbPortillons:"0"},
+    d:{L:"",l:"",H:"",toit:(TYPES[type].toit||"2p"),pente:"10",Hav:"",Har:"",deb:"0",nbEP:"",entPort:"6",entPannes:"1,5",entLisses:"1,5",potelets:"0",gcL:"",gcH:"1",clotL:"",nbPortails:"1",nbPortillons:"0",portL:"",portH:""},
     hauvents:[], ouv:[], fumi:{on:false,q:"1"}, sec:{}, dyn:{}};
   buildSections(o); return o;
 }
@@ -1004,7 +1004,7 @@ function dimText(o, Q){
   if(g==="boite") return `${fmtQ(num(d.L))} × ${fmtQ(num(d.l))} m, H ${fmtQ(num(d.H))} m`;
   if(g==="plan") return `${fmtQ(num(d.L))} × ${fmtQ(num(d.l))} m`;
   if(g==="lin") return `${fmtQ(num(d.gcL))} ml, H ${fmtQ(num(d.gcH))} m`;
-  if(g==="cloture") return `${fmtQ(num(d.clotL))} ml, ${fmtQ(num(d.nbPortails))} portail(s), ${fmtQ(num(d.nbPortillons))} portillon(s)`;
+  if(g==="cloture") return [num(d.clotL) ? "clôture " + fmtQ(num(d.clotL)) + " ml" : "", num(d.nbPortails) ? fmtQ(num(d.nbPortails)) + " portail" + (num(d.nbPortails) > 1 ? "s" : "") + (num(d.portL) ? " " + fmtQ(num(d.portL)) + " × " + fmtQ(num(d.portH)) + " m" : "") : "", num(d.nbPortillons) ? fmtQ(num(d.nbPortillons)) + " portillon(s)" : "", (o.tubes||[]).length ? (o.tubes||[]).length + " section(s) de tube" : ""].filter(Boolean).join(", ");
   if(g==="tubes"){ const t = o.tubes||[]; return `${t.length} tube(s), ${fmtQ(t.reduce((a,x) => a + tubeCalc(x).ml, 0))} ml`; }
   return "";
 }
@@ -1168,7 +1168,7 @@ function renderOuvrage(dv, o, idx){
   } else if(g==="boite"){ dims += numField("Longueur (m)", d.L, "L") + numField("Largeur (m)", d.l, "l") + numField("Hauteur (m)", d.H, "H"); }
   else if(g==="plan"){ dims += numField("Longueur (m)", d.L, "L") + numField("Largeur (m)", d.l, "l"); }
   else if(g==="lin"){ dims += numField("Longueur (ml)", d.gcL, "gcL") + numField("Hauteur (m)", d.gcH, "gcH"); }
-  else if(g==="cloture"){ dims += numField("Longueur de clôture (ml)", d.clotL, "clotL") + numField("Portails (nombre)", d.nbPortails, "nbPortails") + numField("Portillons (nombre)", d.nbPortillons, "nbPortillons"); }
+  else if(g==="cloture"){ dims += numField("Longueur de clôture (ml)", d.clotL, "clotL") + numField("Portails (nombre)", d.nbPortails, "nbPortails") + `<label class="f"><span>Type de portail</span><select data-d="portT">${Object.entries(PORT_T).map(([k,v]) => `<option value="${k}" ${(d.portT||"b2")===k?"selected":""}>${v}</option>`).join("")}</select></label>` + numField("Largeur du portail (m)", d.portL, "portL") + numField("Hauteur du portail (m)", d.portH, "portH") + numField("Portillons (nombre)", d.nbPortillons, "nbPortillons"); }
   else if(g==="tubes") dims = `<p class="muted small" style="margin:0;grid-column:1/-1">Ajoutez chaque tube : sa section, puis les longueurs à couper (ou le métrage total). L’appli calcule les barres à acheter et les chutes. Les heures de découpe, de soudure et de finition se mettent dans « Main-d’œuvre et accessoires ».</p>`;
   else dims = `<p class="muted small" style="margin:0">L’escalier sera détaillé plus tard. Ajoutez les postes à la main en attendant.</p>`;
   const dimBox = el(`<div><div class="grid">${dims}</div><div class="qinfo num" data-qinfo style="margin-top:10px"></div></div>`);
@@ -1178,7 +1178,15 @@ function renderOuvrage(dv, o, idx){
   });
   if(g==="none" || g==="tubes") $("[data-qinfo]", dimBox).remove();
   body.appendChild(dimBox);
-  if(g==="tubes") body.appendChild(tubesPanel(dv, o, () => recalc()));
+  const descBox = el(`<div class="f" style="margin-top:10px"><span>Descriptif pour le client (imprimé sur le devis)</span><textarea rows="3" data-desc placeholder="Ex. Portail 2 vantaux en acier thermolaqué RAL 7016, cadre tube 60×40, remplissage tôle pleine, ouverture vers l’intérieur…">${esc(o.desc||"")}</textarea>${syncOn() ? `<div class="row" style="margin-top:6px"><button type="button" class="btn sm" data-descia>✨ Rédiger avec l’IA</button></div>` : ""}</div>`);
+  $("[data-desc]", descBox).addEventListener("input", e => { o.desc = e.target.value; touch(dv); });
+  const dIa = $("[data-descia]", descBox); if(dIa) dIa.addEventListener("click", () => iaDescriptif(dv, o));
+  body.appendChild(descBox);
+  if(g==="tubes" || T.sections.includes("tubes")) body.appendChild(tubesPanel(dv, o, () => recalc()));
+  if(g==="cloture" || g==="lin"){
+    const tb = el(`<div class="tools calc"><span class="muted small">Outils :</span><button class="btn sm" type="button">Schéma coté</button><span class="muted small">imprimé sur le devis dès que les dimensions sont remplies</span></div>`);
+    $("button", tb).addEventListener("click", () => toolSchema(dv, o)); body.appendChild(tb);
+  }
   if(g==="bat"){
     const tb = el(`<div class="tools calc"><span class="muted small">Outils :</span><button class="btn sm" type="button" data-tool="schema">Schéma</button><button class="btn sm" type="button" data-tool="nv">Neige et vent</button><button class="btn sm" type="button" data-tool="predim">Pré-dimensionnement</button><button class="btn sm" type="button" data-tool="debit">Débits</button><button class="btn sm" type="button" data-tool="levage">Levage</button></div>`);
     tb.addEventListener("click", e => { const t = e.target.dataset.tool; if(t) CALC_TOOLS[t](dv, o); });
@@ -1538,24 +1546,48 @@ function activeLines(o){
   sectionsOf(o).forEach(s => s.lines.forEach(L => { if(!L.data.off) out.push({s, L, c:lineCalc(L,Q)}); }));
   return {Q, lines:out};
 }
+/* Détail d'un tube pour le fournisseur : barres à commander et longueurs à couper */
+function tubeDetail(o, L){
+  const id = String(L.key || "").replace(/^tube_/, ""), x = (o.tubes || []).find(t => t.id === id); if(!x) return "";
+  const t = tubeCalc(x), cuts = (x.pieces || []).filter(p => num(p[0]) > 0 && num(p[1]) > 0).map(p => fmtQ(num(p[1])) + " × " + fmtQ(num(p[0])) + " m").join(", ");
+  return " (" + t.nb + " barre" + (t.nb > 1 ? "s" : "") + " de " + fmtQ(t.bar) + " m" + (cuts ? " ; coupes : " + cuts : "") + ")";
+}
+const MAIL_NON = /pose|fabrication|main[- ]d|montage|études?|plans?|note de calcul|déplacement|hébergement|transport|livraison|levage|grue|nacelle|découpe|soudure|meulage|thermolaqu|peinture|sous-trait|^divers$/i;
 function mailFournisseur(dv){
-  const cl = getClient(dv.clientId);
-  let b = "Bonjour,\n\nPourriez-vous me faire parvenir votre meilleur prix pour les éléments suivants";
-  b += dv.titre ? " (chantier : " + dv.titre + (cl && cl.ville ? ", " + cl.ville : "") + ")" : (cl && cl.ville ? " (chantier à " + cl.ville + ")" : "");
-  b += " :\n";
-  dv.ouvrages.forEach(o => {
+  const cl = getClient(dv.clientId), rows = [];
+  dv.ouvrages.forEach((o, oi) => {
     const a = activeLines(o);
-    const ls = a.lines.filter(x => x.s.base!=="commun" && x.c.qty>0);
-    if(!ls.length) return;
-    b += "\n" + o.name.toUpperCase() + " (" + TYPES[o.type].label + ", " + dimText(o,a.Q) + ")\n";
-    ls.forEach(x => { b += "- " + lineLabel(x.L) + (has(x.L.data.ref)?" : "+x.L.data.ref:"") + " : " + fmtQ(x.c.qtyCh) + " " + x.c.unit + "\n"; });
+    a.lines.filter(x => x.c.qty > 0).forEach(x => {
+      const lab = lineLabel(x.L), u = x.c.unit, tplCommun = x.s.base === "commun" && !x.L.data.custom;
+      if(tplCommun && !/Fournitures diverses/.test(lab)) return;
+      rows.push({oi, o, a, x, lab, on: !(tplCommun || MAIL_NON.test(lab) || u === "h" || u === "jour")});
+    });
   });
-  b += "\nMerci de préciser les délais de livraison.\n\nCordialement,\nENDGO";
-  askEmail("Demande de prix fournisseur", "", to => {
-    openMail(to, "Demande de prix – " + (dv.titre || dv.num), b);
-    logDv(dv, "Demande de prix fournisseur" + (to ? " à " + to : ""));
-    if(dv.statut==="Brouillon"){ setStatut(dv, "Prix demandés"); setTimeout(render, 300); }
-  });
+  if(!rows.length){ toast("Aucune ligne avec une quantité dans ce devis"); return; }
+  const box = el(`<div style="display:flex;flex-direction:column;gap:6px"><p class="muted small" style="margin:0 0 4px">Cochez ce que le fournisseur doit chiffrer. La pose, la main-d’œuvre et les services sont décochés d’office.</p>
+    ${dv.ouvrages.map((o, oi) => rows.some(r => r.oi === oi) ? `<b class="small" style="margin-top:6px">${esc(o.name)}</b>` + rows.map((r, i) => r.oi === oi ? `<label class="check" style="font-weight:400"><input type="checkbox" data-r="${i}" ${r.on ? "checked" : ""}> ${esc(r.lab)} : ${fmtQ(r.x.c.qtyCh)} ${esc(r.x.c.unit)}</label>` : "").join("") : "").join("")}</div>`);
+  const build = () => {
+    $$("[data-r]", box).forEach(c => rows[+c.dataset.r].on = c.checked);
+    let b = "Bonjour,\n\nPourriez-vous me faire parvenir votre meilleur prix pour les éléments suivants";
+    b += dv.titre ? " (chantier : " + dv.titre + (cl && cl.ville ? ", " + cl.ville : "") + ")" : (cl && cl.ville ? " (chantier à " + cl.ville + ")" : "");
+    b += " :\n";
+    dv.ouvrages.forEach((o, oi) => {
+      const ls = rows.filter(r => r.oi === oi && r.on); if(!ls.length) return;
+      const dt = dimText(o, ls[0].a.Q);
+      b += "\n" + o.name.toUpperCase() + " (" + TYPES[o.type].label + (dt ? ", " + dt : "") + ")\n";
+      ls.forEach(r => { b += "- " + r.lab + (has(r.x.L.data.ref) ? " : " + r.x.L.data.ref : "") + " : " + fmtQ(r.x.c.qtyCh) + " " + r.x.c.unit + (String(r.x.L.key || "").startsWith("tube_") ? tubeDetail(o, r.x.L) : "") + "\n"; });
+    });
+    return b + "\nMerci de préciser les délais de livraison.\n\nCordialement,\nENDGO";
+  };
+  modal("Demande de prix fournisseur", box, [{label:"Annuler", cls:"ghost"}, {label:"Suivant", cls:"primary", onClick:() => {
+    if(!$$("[data-r]", box).some(c => c.checked)){ toast("Cochez au moins une ligne"); return false; }
+    const b = build();
+    askEmail("Demande de prix fournisseur", "", to => {
+      openMail(to, "Demande de prix – " + (dv.titre || dv.num), b);
+      logDv(dv, "Demande de prix fournisseur" + (to ? " à " + to : ""));
+      if(dv.statut==="Brouillon"){ setStatut(dv, "Prix demandés"); setTimeout(render, 300); }
+    });
+  }}]);
 }
 async function exportBackup(){
   DB.lastExport = today(); DB.snooze = null; saveNow();
@@ -1623,13 +1655,13 @@ function downloadDevis(dv){
   const ouvBlock = (o, i) => {
     const a = activeLines(o); let st = 0;
     const rows = a.lines.filter(x => x.c.qty>0 && x.c.total>0).map(x => { st += x.c.total; return `<tr><td>${esc(lineLabel(x.L))}${has(x.L.data.ref)?`<br><small>${esc(x.L.data.ref)}</small>`:""}</td><td class="r">${fmtQ(x.c.qty)}</td><td>${esc(x.c.unit)}</td><td class="r">${x.c.total?fmt(x.c.puClient):"—"}</td><td class="r">${fmt(x.c.total)}</td></tr>`; }).join("");
-    return `<div class="ouv"><h3><em>${i}</em>${esc(o.name)} <span>${esc(TYPES[o.type].label)}${o.variant?" · option "+o.variant:""}</span></h3><p class="dim">${esc(dimText(o,a.Q))}</p>
+    return `<div class="ouv"><h3><em>${i}</em>${esc(o.name)} <span>${esc(TYPES[o.type].label)}${o.variant?" · option "+o.variant:""}</span></h3><p class="dim">${esc(dimText(o,a.Q))}</p>${has(o.desc) ? `<p class="desc">${esc(o.desc).replace(/\n/g,"<br>")}</p>` : ""}
       <table><thead><tr><th>Désignation</th><th class="r">Qté</th><th>Unité</th><th class="r">PU HT €</th><th class="r">Total HT €</th></tr></thead><tbody>${rows}</tbody>
-      <tfoot><tr><td colspan="4">Sous-total ${esc(o.name)}</td><td class="r">${fmt(st)}</td></tr></tfoot></table>${o.schemaDevis && TYPES[o.type].geo==="bat" ? `<div class="schema">${schemaSvg(o)}</div>` : ""}</div>`;
+      <tfoot><tr><td colspan="4">Sous-total ${esc(o.name)}</td><td class="r">${fmt(st)}</td></tr></tfoot></table>${schemaOn(o) ? `<div class="schema">${schemaSvg(o)}</div>` : ""}</div>`;
   };
   const base = dv.ouvrages.filter(o => !o.variant), vars = dv.ouvrages.filter(o => o.variant);
   const ops = Object.keys(t.options).sort();
-  const cliHtml = cl ? `<b>${esc([cl.civ,cl.prenom,cl.nom].filter(has).join(" "))}</b>${cl.societe?"<br>"+esc(cl.societe):""}<br>${esc(cl.adresse||"")}<br>${esc([cl.cp,cl.ville].filter(has).join(" "))}${cl.tel?"<br>"+esc(cl.tel):""}${cl.email?"<br>"+esc(cl.email):""}` : "Client non renseigné";
+  const cliHtml = cl ? `<b>${esc([cl.civ,cl.prenom,cl.nom].filter(has).join(" "))}</b>${cl.societe?"<br>"+esc(cl.societe):""}${has(cl.adresse)?"<br>"+esc(cl.adresse):""}${has(cl.cp)||has(cl.ville)?"<br>"+esc([cl.cp,cl.ville].filter(has).join(" ")):""}${cl.tel?"<br>"+esc(cl.tel):""}${cl.email?"<br>"+esc(cl.email):""}` : "Client non renseigné";
   const chant = cl ? chantierAdresse(cl) : "";
   const ech = echeancier(dv).filter(x => num(x[1]));
   const cond = String(S("conditions")).replace(/\{validite\}/g, validite(dv));
@@ -1647,7 +1679,7 @@ body{margin:0;font-family:-apple-system,"Segoe UI",Roboto,Arial,sans-serif;color
 h2{font-size:15px;margin:28px 0 6px;color:#0B1E5B;text-transform:uppercase;letter-spacing:.06em;border-bottom:2px solid #0B1E5B;padding-bottom:4px}
 .ouv{break-inside:avoid-page}
 h3{margin:20px 0 2px;font-size:15px;display:flex;align-items:baseline;gap:8px}h3 em{font-style:normal;background:#E8730C;color:#fff;border-radius:4px;padding:1px 7px;font-size:12px;-webkit-print-color-adjust:exact;print-color-adjust:exact}h3 span{font-weight:400;color:#66708A;font-size:12px}
-.dim{margin:0 0 8px;color:#66708A}
+.dim{margin:0 0 8px;color:#66708A}.desc{margin:0 0 10px;line-height:1.5;color:#121A33;border-left:3px solid #E8730C;padding:2px 0 2px 10px}
 table{width:100%;border-collapse:collapse}th,td{padding:6px 8px;border-bottom:1px solid #E6E9F0;text-align:left;vertical-align:top}
 th{background:#F2F4F9;font-size:11px;text-transform:uppercase;letter-spacing:.04em;color:#46506A;-webkit-print-color-adjust:exact;print-color-adjust:exact}
 .r{text-align:right;white-space:nowrap}tfoot td{font-weight:700;border-bottom:none;background:#FAFBFD}small{color:#66708A}
@@ -1660,10 +1692,10 @@ th{background:#F2F4F9;font-size:11px;text-transform:uppercase;letter-spacing:.04
 @media (max-width:560px){.wrap{padding:14px}.band{padding:16px}.totals{width:100%}.sign{grid-template-columns:1fr}td,th{padding:5px 4px}}
 </style></head><body>
 <div class="band"><img src="${LOGO}" alt="endgo"><div class="t"><b>DEVIS ${esc(dv.num)}</b>du ${frDate(dv.date)}<br>valable ${esc(validite(dv))} jours</div></div>
-<div class="wrap"><div class="meta"><div class="box"><small>Client</small>${cliHtml}</div><div class="box"><small>Chantier</small>${esc(chant||"—")}</div><div class="box"><small>Objet</small>${esc(dv.titre||"—")}</div></div>
+<div class="wrap"><div class="meta"><div class="box"><small>Client</small>${cliHtml}</div>${has(chant)?`<div class="box"><small>Chantier</small>${esc(chant)}</div>`:""}<div class="box"><small>Objet</small>${esc(dv.titre||"—")}</div></div>
 <h2>Détail des travaux</h2>
 ${base.map((o,i) => ouvBlock(o, i+1)).join("")}
-<table class="totals"><tr><td>Matériaux</td><td class="r">${eur(t.mat)}</td></tr><tr><td>Main-d’œuvre</td><td class="r">${eur(t.mo)}</td></tr><tr><td><b>Total HT</b></td><td class="r"><b>${eur(t.ht)}</b></td></tr><tr><td>TVA ${esc(dv.tva)} %</td><td class="r">${eur(t.tva)}</td></tr><tr class="ttc"><td>Total TTC</td><td class="r">${eur(t.ttc)}</td></tr></table>
+<table class="totals">${t.mo && t.mat ? `<tr><td>Matériaux</td><td class="r">${eur(t.mat)}</td></tr><tr><td>Main-d’œuvre</td><td class="r">${eur(t.mo)}</td></tr>` : ""}<tr><td><b>Total HT</b></td><td class="r"><b>${eur(t.ht)}</b></td></tr><tr><td>TVA ${esc(dv.tva)} %</td><td class="r">${eur(t.tva)}</td></tr><tr class="ttc"><td>Total TTC</td><td class="r">${eur(t.ttc)}</td></tr></table>
 ${optHtml}
 ${ech.length ? `<h2>Échéancier de paiement</h2><table><thead><tr><th>Échéance</th><th class="r">%</th><th class="r">Montant TTC${ops.length?" (devis de base)":""}</th></tr></thead><tbody>${ech.map(x => `<tr><td>${esc(x[0])}</td><td class="r">${fmtQ(num(x[1]))} %</td><td class="r">${eur(t.ttc*num(x[1])/100)}</td></tr>`).join("")}</tbody></table>` : ""}
 <h2>Conditions</h2><p class="cond">${esc(cond)}</p>
@@ -2021,6 +2053,12 @@ function openSketch(dv, sk){
     const m = modal(isNew ? "Nouveau croquis" : sk.titre, box, [
       ...(isNew ? [] : [{label:"Supprimer",cls:"ghost danger",onClick:() => { confirmBox("Supprimer ce croquis ?", "Supprimer", () => { c.croquis = c.croquis.filter(x => x.id!==sk.id); MEDIA.del("sk_"+sk.id); touch(dv); render(); }); }}]),
       {label:"Télécharger",onClick:() => { download(slug(sk.titre)+".png", null, null, pad.png()); return false; }},
+      ...(syncOn() ? [{label:"Analyser avec l’IA",onClick:bg => {
+        sk.titre = $("#skT", bg).value.trim() || sk.titre; sk.date = today(); sk.rev = Date.now();
+        const png = pad.png("image/jpeg", 0.85), ops = pad.st.ops;
+        MEDIA.put("sk_"+sk.id, {ops, png}); if(isNew) c.croquis.push(sk); touch(dv);
+        iaSketch(dv, sk, png, ops);
+      }}] : []),
       {label:"Fermer",cls:"ghost"},
       {label:"Enregistrer",cls:"primary",onClick:bg => {
         sk.titre = $("#skT", bg).value.trim() || sk.titre; sk.date = today(); sk.rev = Date.now();
@@ -2555,7 +2593,54 @@ function toolLevage(dv, o){
 }
 
 /* E3 : schéma du bâtiment (vue 3D et pignon cotés) */
+/* V3 : schéma coté automatique des portails et garde-corps */
+const PORT_T = {b2:"Battant 2 vantaux", b1:"Battant 1 vantail", co:"Coulissant"};
+function schemaOn(o){ const g = TYPES[o.type].geo; if(g === "bat") return !!o.schemaDevis; if(g === "cloture") return o.schemaDevis !== false && num(o.d.portL) > 0 && num(o.d.portH) > 0 && num(o.d.nbPortails) > 0; if(g === "lin") return o.schemaDevis !== false && num(o.d.gcL) > 0 && num(o.d.gcH) > 0; return false; }
+function svgWrap(W, H, g){ return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${W} ${H}"><defs><marker id="ar2" viewBox="0 0 10 10" refX="5" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0L10 5L0 10z" fill="#E8730C"/></marker></defs><rect width="${W}" height="${H}" fill="#fff"/>${g}</svg>`; }
+const svgT = (x, y, t, a, sz, col) => `<text x="${Math.round(x)}" y="${Math.round(y)}" font-size="${sz||16}" font-family="Arial" font-weight="700" fill="${col||"#121A33"}" text-anchor="${a||"middle"}">${esc(t)}</text>`;
+const svgCote = (x1, y1, x2, y2) => `<line x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}" stroke="#E8730C" stroke-width="1.4" marker-start="url(#ar2)" marker-end="url(#ar2)"/>`;
+function tubesLegend(o, y, W){ const t = (o.tubes || []).filter(x => has(x.sec)); return t.length ? svgT(W/2, y, "Tubes : " + t.map(x => x.sec.trim()).join(" · "), "middle", 13, "#46506A") : ""; }
+function portailSvg(o){
+  const d = o.d, Lw = num(d.portL) || 3, Hh = num(d.portH) || 1.8, ty = d.portT || "b2", W = 680, H = 400;
+  const sc = Math.min((W - 170) / (Lw + 0.4), (H - 150) / Hh), x0 = (W - Lw * sc) / 2, yb = H - 90, yt = yb - Hh * sc, pw = Math.max(8, 0.1 * sc);
+  let g = `<line x1="20" y1="${yb}" x2="${W-20}" y2="${yb}" stroke="#B8C0D4" stroke-width="2"/>`;
+  const post = x => `<rect x="${x - pw/2}" y="${yt - 0.1*sc}" width="${pw}" height="${yb - yt + 0.1*sc + 6}" fill="#0B1E5B"/>`;
+  const leaf = (xa, xb) => { const w = xb - xa, gap = 3; let r = `<rect x="${xa+gap}" y="${yt+4}" width="${w-2*gap}" height="${yb-yt-12}" fill="rgba(31,85,200,.06)" stroke="#1F55C8" stroke-width="3"/>`;
+    r += `<line x1="${xa+gap}" y1="${(yt+yb)/2}" x2="${xb-gap}" y2="${(yt+yb)/2}" stroke="#1F55C8" stroke-width="2"/>`;
+    const nb = Math.max(2, Math.min(30, Math.round(w / (0.12 * sc)))); for(let i = 1; i < nb; i++){ const x = xa + gap + (w - 2*gap) * i / nb; r += `<line x1="${x}" y1="${yt+4}" x2="${x}" y2="${yb-8}" stroke="#7A8BB8" stroke-width="1"/>`; }
+    return r; };
+  if(ty === "co"){
+    g += post(x0 - pw/2) + post(x0 + Lw*sc + pw/2) + leaf(x0, x0 + Lw*sc);
+    g += `<line x1="${x0 - Lw*sc*0.3}" y1="${yb+4}" x2="${x0 + Lw*sc}" y2="${yb+4}" stroke="#46506A" stroke-width="3"/>` + svgCote(x0 + Lw*sc*0.65, yt - 22, x0 + Lw*sc*0.35, yt - 22) + svgT(x0 + Lw*sc/2, yt - 30, "sens d’ouverture", "middle", 12, "#66708A");
+  } else {
+    g += post(x0 - pw/2) + post(x0 + Lw*sc + pw/2);
+    if(ty === "b2"){ g += leaf(x0, x0 + Lw*sc/2) + leaf(x0 + Lw*sc/2, x0 + Lw*sc); }
+    else g += leaf(x0, x0 + Lw*sc);
+    [x0 + 2, x0 + Lw*sc - 2].slice(0, ty === "b2" ? 2 : 1).forEach(x => { [yt + 0.18*(yb-yt), yb - 0.18*(yb-yt)].forEach(y => { g += `<rect x="${x - 4}" y="${y - 7}" width="8" height="14" rx="2" fill="#E8730C"/>`; }); });
+  }
+  g += svgCote(x0, yb + 30, x0 + Lw*sc, yb + 30) + svgT(x0 + Lw*sc/2, yb + 52, fmtQ(Lw) + " m (passage)");
+  g += svgCote(x0 - pw - 26, yt, x0 - pw - 26, yb) + svgT(x0 - pw - 34, (yt + yb)/2 + 5, fmtQ(Hh) + " m", "end");
+  g += svgT(W/2, 26, (PORT_T[ty] || "Portail") + (num(d.nbPortails) > 1 ? " × " + fmtQ(num(d.nbPortails)) : ""), "middle", 15, "#0B1E5B");
+  g += tubesLegend(o, H - 14, W);
+  return svgWrap(W, H, g);
+}
+function gcSvg(o){
+  const d = o.d, Lg = num(d.gcL) || 3, Hg = num(d.gcH) || 1, W = 680;
+  const sc = Math.min((W - 140) / Lg, 170 / Hg), H = Math.round(Hg * sc + 140), x0 = (W - Lg * sc) / 2, yb = H - 80, yt = yb - Hg * sc;
+  const np = Math.max(2, Math.ceil(Lg / 1.5) + 1);
+  let g = `<line x1="20" y1="${yb}" x2="${W-20}" y2="${yb}" stroke="#B8C0D4" stroke-width="2"/>`;
+  g += `<line x1="${x0}" y1="${yt}" x2="${x0 + Lg*sc}" y2="${yt}" stroke="#1F55C8" stroke-width="5"/><line x1="${x0}" y1="${yb - 0.1*sc}" x2="${x0 + Lg*sc}" y2="${yb - 0.1*sc}" stroke="#1F55C8" stroke-width="3"/>`;
+  const nbar = Math.min(80, Math.round(Lg / 0.11)); for(let i = 1; i < nbar; i++){ const x = x0 + Lg*sc*i/nbar; g += `<line x1="${x}" y1="${yt}" x2="${x}" y2="${yb - 0.1*sc}" stroke="#7A8BB8" stroke-width="1"/>`; }
+  for(let i = 0; i < np; i++){ const x = x0 + Lg*sc*i/(np-1); g += `<line x1="${x}" y1="${yt - 3}" x2="${x}" y2="${yb}" stroke="#0B1E5B" stroke-width="5"/>`; }
+  g += svgCote(x0, yb + 28, x0 + Lg*sc, yb + 28) + svgT(x0 + Lg*sc/2, yb + 50, fmtQ(Lg) + " ml");
+  g += svgCote(x0 - 26, yt, x0 - 26, yb) + svgT(x0 - 34, (yt + yb)/2 + 5, fmtQ(Hg) + " m", "end");
+  g += svgT(W/2, 26, "Garde-corps · " + np + " poteaux, entraxe " + fmtQ(Math.round(Lg/(np-1)*100)/100) + " m · barreaudage 11 cm", "middle", 14, "#0B1E5B");
+  g += tubesLegend(o, H - 12, W);
+  return svgWrap(W, H, g);
+}
 function schemaSvg(o){
+  if(TYPES[o.type].geo === "cloture") return portailSvg(o);
+  if(TYPES[o.type].geo === "lin") return gcSvg(o);
   const Q = quantities(o), d = o.d, L = Q.L || 1, l = Q.l || 1, n = Math.max(2, Q.nbPortiques||2), toit = d.toit || "2p";
   let zF = Q.Hlow, zB = Q.Hlow, prof;
   if(toit==="2p") prof = [[0,Q.Hlow],[l/2,Q.Hhigh],[l,Q.Hlow]];
@@ -2601,7 +2686,7 @@ function schemaSvg(o){
 }
 function toolSchema(dv, o){
   const box = el(`<div style="display:flex;flex-direction:column;gap:10px"><div class="schema">${schemaSvg(o)}</div>
-    <label class="row small" style="gap:8px"><input type="checkbox" data-sd ${o.schemaDevis?"checked":""} style="width:auto"> Mettre ce schéma sur le devis imprimé</label></div>`);
+    <label class="row small" style="gap:8px"><input type="checkbox" data-sd ${schemaOn(o) || (TYPES[o.type].geo !== "bat" && o.schemaDevis !== false) ?"checked":""} style="width:auto"> Mettre ce schéma sur le devis imprimé</label></div>`);
   $("[data-sd]", box).addEventListener("change", e => { o.schemaDevis = e.target.checked; touch(dv); });
   const m = modal("Schéma : " + o.name, box, [{label:"Télécharger (SVG)",onClick:() => { download(slug(o.name)+"-schema.svg", schemaSvg(o), "image/svg+xml"); return false; }},{label:"Fermer",cls:"primary"}]);
   $(".modal", m).classList.add("wide");
@@ -3194,7 +3279,7 @@ async function syncPush(force){
   const r = await syncCall({action:"push", base:SYNC.version||"", force:!!force, data:JSON.stringify(dataPart()), rows:syncRows()});
   if(r && r.conflict) return "conflict";
   if(!r || !r.ok) throw new Error(r && r.err || "échec de l’envoi");
-  SYNC.version = r.version; SYNC.hash = dataHash(); SYNC.at = new Date().toISOString(); syncStore();
+  SYNC.version = r.version; SYNC.hash = dataHash(); SYNC.at = new Date().toISOString(); syncStore(); baseSave();
   await syncMediaUp();
   return "ok";
 }
@@ -3204,18 +3289,67 @@ async function syncPull(){
   if(!r.data) return "empty";
   const data = JSON.parse(r.data), ui = DB.ui;
   DB = Object.assign(blankDB(), data); DB.ui = Object.assign(blankDB().ui, ui); migrate();
-  SYNC.version = r.version; SYNC.hash = dataHash(); SYNC.at = new Date().toISOString(); syncStore();
+  SYNC.version = r.version; SYNC.hash = dataHash(); SYNC.at = new Date().toISOString(); syncStore(); baseSave();
   try{ localStorage.setItem(KEY, JSON.stringify(DB)); }catch(e){}
   if(!curDevis()) DB.ui.devisId = DB.devis.length ? DB.devis[DB.devis.length-1].id : null;
   render();
   await syncMediaDown(); render();
   return "ok";
 }
-function syncConflict(){
-  modal("Données modifiées ailleurs", `<p style="margin:0">Les données enregistrées sur Google ont changé depuis un autre appareil, et cet appareil a aussi des modifications. Que voulez-vous garder ?</p>`, [
-    {label:"Garder celles de Google",onClick:() => { syncPull().then(() => toast("Données de Google récupérées")).catch(e => toast(e.message)); }},
-    {label:"Garder celles d’ici",cls:"primary",onClick:() => { syncPush(true).then(() => toast("Données envoyées sur Google")).catch(e => toast(e.message)); }}]);
+/* V3 : fusion automatique. On garde une copie de la dernière version synchronisée (base) ; pour chaque client, devis
+   et réglage, on prend le côté qui a changé depuis cette base. On ne demande que si la MÊME fiche a changé des deux côtés. */
+const BASE_KEY = "endgo_sync_base_v3";
+function baseSave(){ try{ localStorage.setItem(BASE_KEY, JSON.stringify(dataPart())); }catch(e){} }
+function baseGet(){ try{ return JSON.parse(localStorage.getItem(BASE_KEY) || "null"); }catch(e){ return null; } }
+function syncMerge(L, R, B){
+  B = B || {}; const out = {}, conf = [], J = x => x === undefined ? "∅" : JSON.stringify(x);
+  const pick = (l, r, b) => { const jl = J(l), jr = J(r), jb = J(b); if(jl === jr || jr === jb) return {v:l}; if(jl === jb) return {v:r}; return {conf:true}; };
+  new Set(Object.keys(L).concat(Object.keys(R))).forEach(k => {
+    if(k === "clients" || k === "devis"){
+      const map = a => new Map((a || []).map(x => [x.id, x])), ml = map(L[k]), mr = map(R[k]), mb = map(B[k]);
+      const ids = [...new Set((L[k] || []).map(x => x.id).concat((R[k] || []).map(x => x.id)))], arr = [];
+      ids.forEach(id => { const p = pick(ml.get(id), mr.get(id), mb.get(id));
+        if(p.conf){ conf.push({k, id, l:ml.get(id), r:mr.get(id)}); arr.push({__c:conf.length - 1}); } else if(p.v !== undefined) arr.push(p.v); });
+      out[k] = arr;
+    } else if(k === "seq"){
+      out.seq = Object.assign({}, R.seq || {}, L.seq || {});
+      Object.keys(R.seq || {}).forEach(y => out.seq[y] = Math.max(+((L.seq || {})[y] || 0), +(R.seq[y] || 0)));
+    } else { const p = pick(L[k], R[k], B[k]); if(p.conf){ conf.push({k, l:L[k], r:R[k]}); out[k] = {__c:conf.length - 1}; } else if(p.v !== undefined) out[k] = p.v; }
+  });
+  return {out, conf};
 }
+function syncConfLabel(c){
+  const x = c.l || c.r || {};
+  if(c.k === "clients") return "Client " + clientName(x);
+  if(c.k === "devis") return "Devis " + (x.num || "") + (x.titre ? " – " + x.titre : "");
+  return ({catalog:"Liste de prix", settings:"Réglages", lib:"Postes personnalisés", models:"Modèles de devis", pdfMap:"Correspondances PDF", pdfFourn:"Fournisseurs PDF"})[c.k] || "Réglage « " + c.k + " »";
+}
+async function syncResolve(){
+  const r = await syncCall({action:"pull"});
+  if(!r || !r.ok) throw new Error(r && r.err || "échec de la récupération");
+  const R = r.data ? JSON.parse(r.data) : {}, L = dataPart();
+  const finish = async (out) => {
+    const ui = DB.ui; DB = Object.assign(blankDB(), out); DB.ui = Object.assign(blankDB().ui, ui); migrate();
+    try{ localStorage.setItem(KEY, JSON.stringify(DB)); }catch(e){}
+    SYNC.version = r.version; syncStore();
+    if(!curDevis()) DB.ui.devisId = DB.devis.length ? DB.devis[DB.devis.length-1].id : null;
+    render();
+    if(await syncPush(false) === "conflict") throw new Error("l’autre appareil vient encore d’envoyer, réessayez");
+    await syncMediaDown(); render();
+  };
+  const m = syncMerge(L, R, baseGet());
+  if(!m.conf.length){ await finish(m.out); syncState("Synchronisé " + hhmm()); return "merged"; }
+  const fill = (side) => { const o = m.out; const put = (c) => c[side];
+    ["clients","devis"].forEach(k => { if(Array.isArray(o[k])) o[k] = o[k].map(x => x && x.__c !== undefined ? put(m.conf[x.__c]) : x).filter(x => x); });
+    Object.keys(o).forEach(k => { if(o[k] && o[k].__c !== undefined){ const v = put(m.conf[o[k].__c]); if(v === undefined) delete o[k]; else o[k] = v; } });
+    return o; };
+  const list = m.conf.map(c => "<li>" + esc(syncConfLabel(c)) + (c.l && !c.r ? " (supprimé sur l’autre appareil)" : !c.l && c.r ? " (supprimé ici)" : "") + "</li>").join("");
+  modal("Même fiche modifiée sur deux appareils", `<p style="margin:0 0 8px">Tout le reste a été réuni automatiquement. Seule${m.conf.length > 1 ? "s ces fiches ont" : " cette fiche a"} été modifiée${m.conf.length > 1 ? "s" : ""} à la fois ici et sur l’autre appareil :</p><ul style="margin:0 0 8px;padding-left:20px">${list}</ul><p class="muted small" style="margin:0">« Garder celle d’ici » : la version de cet écran. « Garder celle de Google » : la version envoyée par l’autre appareil.</p>`, [
+    {label:"Garder celle de Google", onClick:() => { finish(fill("r")).then(() => toast("Version de Google gardée pour ces fiches")).catch(e => toast(e.message)); }},
+    {label:"Garder celle d’ici", cls:"primary", onClick:() => { finish(fill("l")).then(() => toast("Version d’ici gardée pour ces fiches")).catch(e => toast(e.message)); }}]);
+  return "ask";
+}
+function syncConflict(){ syncBusy = true; syncResolve().catch(e => toast("Synchro Google : " + e.message)).then(() => { syncBusy = false; }); }
 async function syncNow(silent){
   if(!syncOn() || syncBusy) return;
   if(!navigator.onLine){ syncState("Hors ligne : synchro plus tard"); return; }
@@ -3228,7 +3362,7 @@ async function syncNow(silent){
     if(remoteChanged && !localChanged) await syncPull();
     else if(remoteChanged && localChanged && info.version){ syncBusy = false; syncConflict(); return; }
     else if(localChanged){ if(await syncPush(false) === "conflict"){ syncBusy = false; syncConflict(); return; } }
-    else await syncMediaUp();
+    else { await syncMediaUp(); if(!baseGet()) baseSave(); }
     syncState("Synchronisé " + hhmm());
     if(SYNC.v >= 3 && !SYNC.range) await syncRanger();
   }catch(e){ syncState("Synchro en échec"); if(!silent) toast("Synchro Google : " + e.message); }
@@ -3248,7 +3382,7 @@ async function syncRanger(){
 }
 function syncSchedule(){
   if(!syncOn() || SYNC.auto===false) return;
-  clearTimeout(syncTimer); syncTimer = setTimeout(() => syncNow(true), 15000);
+  clearTimeout(syncTimer); syncTimer = setTimeout(() => syncNow(true), 4000);
 }
 function syncModal(){
   const box = el(`<div style="display:flex;flex-direction:column;gap:10px">
@@ -3258,7 +3392,7 @@ function syncModal(){
     <label class="row small" style="gap:8px"><input type="checkbox" id="syA" ${SYNC.auto===false?"":"checked"} style="width:auto"> Synchroniser tout seul après chaque modification</label>
     <p class="syncst muted" id="syS">${SYNC.at ? "Dernière synchro : " + frDate(SYNC.at.slice(0,10)) + " " + SYNC.at.slice(11,16) + " (UTC)" : "Jamais synchronisé"}</p></div>`);
   const read = () => { const ou = SYNC.url || "", ok = SYNC.key || ""; if(!HOSTED) SYNC.url = $("#syU", box).value.trim(); SYNC.key = $("#syK", box).value.trim(); SYNC.auto = $("#syA", box).checked;
-    if((ou || ok) && ((SYNC.url || "") !== ou || SYNC.key !== ok)){ SYNC.media = {}; SYNC.version = ""; SYNC.hash = ""; SYNC.range = 0; delete SYNC.ia; delete SYNC.at; } /* nouveau script (autre compte Google) : tout sera renvoyé, photos comprises */
+    if((ou || ok) && ((SYNC.url || "") !== ou || SYNC.key !== ok)){ SYNC.media = {}; SYNC.version = ""; SYNC.hash = ""; SYNC.range = 0; delete SYNC.ia; delete SYNC.at; try{ localStorage.removeItem(BASE_KEY); }catch(e){} } /* nouveau script (autre compte Google) : tout sera renvoyé, photos comprises */
     syncStore(); };
   const st = t => $("#syS", box).textContent = t;
   const run = async (fn, okTxt) => { read(); if(!syncOn()){ st("Indiquez l’adresse et la clé"); return false; } st("En cours…"); try{ const r = await fn(); st(r==="conflict" ? "Conflit : choisissez quelles données garder" : r==="empty" ? "Rien sur Google pour l’instant : faites « Envoyer »" : okTxt); if(r==="conflict") syncConflict(); }catch(e){ st("Échec : " + (/fetch/i.test(e.message) ? "pas de connexion ou adresse incorrecte" : e.message)); } return false; };
@@ -3278,6 +3412,19 @@ const IAS = {conv:null, data:null, fort:false, att:[], busy:false, rec:null, rec
 function iaStore(){ try{ localStorage.setItem(IA_KEY, JSON.stringify(IA)); }catch(e){} }
 function iaBlank(){ return {api:[], view:[], ctxHash:"", memo:null, notes:[]}; }
 function iaSaveConv(){ if(IAS.conv && IAS.data) MEDIA.put("ia_" + IAS.conv.id, IAS.data); iaStore(); }
+function iaSketch(dv, sk, png, ops){
+  const cl = getClient(dv.clientId), cotes = (ops || []).filter(o => (o.t === "c" && has(o.v)) || (o.t === "x" && has(o.s))).map(o => o.t === "c" ? "cote " + o.v : "texte « " + o.s + " »");
+  IA.sel = cl ? cl.id : ""; IAS.conv = null; IAS.data = null; IAS.fort = false; iaStore();
+  IAS.att = [{kind:"image", label:"Croquis " + sk.titre, mt:"image/jpeg", data:png.split(",")[1]}];
+  if(DB.ui.tab !== "ia") setTab("ia"); else render();
+  setTimeout(() => iaSend("Analyse ce croquis « " + sk.titre + " » (devis " + dv.num + ")" + (cotes.length ? ". Cotes et textes écrits dessus : " + cotes.join(", ") : "") + ". Dis-moi ce que tu comprends, fais le débit complet (tubes, profilés, tôles, autres pièces) et pose-moi en QCM ce qui manque. Ensuite propose de l’ajouter au devis."), 50);
+}
+function iaDescriptif(dv, o){
+  const cl = getClient(dv.clientId); if(!cl){ toast("Ce devis n’a pas de client"); return; }
+  IA.sel = cl.id; IAS.conv = null; IAS.data = null; IAS.fort = false; iaStore();
+  if(DB.ui.tab !== "ia") setTab("ia"); else render();
+  setTimeout(() => iaSend("Rédige le descriptif client de l’ouvrage « " + o.name + " » [ouvrage:" + o.id + "] du devis " + dv.num + (has(o.desc) ? " (améliore celui-ci : " + o.desc + ")" : "") + ". S’il te manque une information importante (finition, RAL, sens d’ouverture, remplissage…), pose-la en QCM, puis propose l’action pour l’enregistrer."), 50);
+}
 function iaClient(){ return IA.sel ? getClient(IA.sel) : null; }
 function iaConvClient(){ return IAS.conv && IAS.conv.clientId ? getClient(IAS.conv.clientId) : null; }
 function ym(){ return today().slice(0,7); }
@@ -3305,19 +3452,22 @@ function iaPlain(res){ return String(res.texte || "").replace(/\*\*/g, "").repla
 function iaCtxGeneral(){
   const J = ["dimanche","lundi","mardi","mercredi","jeudi","vendredi","samedi"];
   const postes = CAT_GROUPS.map(([g,t]) => t + " : " + catItems(g).map(x => x.label).join(", ")).join("\n");
-  return "[Contexte]\nDate du jour : " + J[new Date().getDay()] + " " + frDate(today()) + "\nClients enregistrés : " + (DB.clients.map(clientName).join(" ; ") || "aucun") + "\nPostes du catalogue (onglet Prix) :\n" + postes;
+  return "[Contexte]\nDate du jour : " + J[new Date().getDay()] + " " + frDate(today()) + "\nClients enregistrés : " + (DB.clients.map(clientName).join(" ; ") || "aucun") + "\nPostes du catalogue (onglet Prix) :\n" + postes + "\nClés en plus pour les ouvrages (creer_projet, modifier_devis) : oN.portL et oN.portH = largeur et hauteur du portail (m), oN.portT = b2 (battant 2 vantaux), b1 (battant 1 vantail) ou co (coulissant) ; oN.tubeK.sec (section, ex. « Tube carré 40×40×2 »), oN.tubeK.longueurs (coupes « quantité × longueur m » séparées par ; ex. « 4 × 1,90 ; 2 × 3,47 »), oN.tubeK.ml (métrage total si pas de coupes), oN.tubeK.barre (longueur des barres, 6 par défaut). Les tubes vont dans les ouvrages metal (métallerie), portail et gc ; décris-y chaque section de tube, poteau ou cadre plutôt qu’une ligne forfait de fournitures. oN.toleK.designation (ex. « Tôle acier larmée »), oN.toleK.epaisseur (mm), oN.toleK.dims (débit « quantité × longueur × largeur » en mm, séparés par ; ex. « 2 × 1500×800 ; 1 × 600×400 »).\nModifier un élément existant (action modifier_devis, ou taches pour la check-list) : utilise la référence entre crochets donnée dans le dossier, sous la forme « type:id.champ ». Lignes de chiffrage (ligne:… ou dyn:…) : .qte, .prix, .ref, .libelle, .actif (oui/non), .marge, .chute, .fournisseur, .supprimer ; tubes (tube:…) : .sec, .longueurs, .ml, .barre, .supprimer ; ouvrages (ouvrage:…) : .nom, .L, .l, .H, .pente, .portL… ou .supprimer ; devis (devis:…) : .titre, .statut, .tva ; check-list (tache:…) : .fait (oui/non), .libelle, .note, .supprimer, et tache.nouvelle (valeur = texte, libelle = nom de la rubrique) ; fiche client : client.champ ; chantier : chantier.note, .debut, .fin, .equipe. Chaque item est une modification que l’utilisateur coche ou non : libelle = ce qui change en clair (ex. « Check-list : poser les gonds → fait »).\nDescriptif client d’un ouvrage (imprimé sous son titre dans le devis) : ouvrage:id.descriptif, ou oN.descriptif à la création ; 3 à 5 lignes claires pour un client non spécialiste (matière, sections principales, finition et RAL, pose, ce qui est compris), sans prix, sans inventer ce que tu ne sais pas (pose la question en QCM).\nCroquis : quand on t’envoie un croquis ou une photo de dessin, lis les cotes et les textes, explique en deux lignes ce que tu comprends, fais le débit complet (tubes et profilés : section, quantité × longueur ; tôles : épaisseur, quantité × dimensions ; autres pièces), et pose en QCM chaque information manquante (section, épaisseur, matière, finition, quantité). Une fois tout clair, propose l’action pour ajouter ce débit au devis (oN.tubeK… et oN.toleK…).";
 }
 function iaCtxClient(c){
   const L = [], cur = iaDevisOf(c);
   L.push("Fiche client : " + CFIELDS.filter(f => has(c[f[0]])).map(f => f[1] + " = " + c[f[0]]).join(" ; "));
   DB.devis.filter(d => d.clientId === c.id).forEach(dv => {
     const t = devisTotals(dv);
-    L.push("\nDevis " + dv.num + (dv.titre ? " – " + dv.titre : "") + " (" + dv.statut + ", du " + frDate(dv.date) + ")" + (dv === cur ? " [devis en cours]" : "") + " : total HT " + fmt(t.ht) + " €, TTC " + fmt(t.ttc) + " €, bénéfice " + fmtQ(Math.round(t.pct)) + " %");
+    L.push("\nDevis " + dv.num + " [devis:" + dv.id + "]" + (dv.titre ? " – " + dv.titre : "") + " (" + dv.statut + ", du " + frDate(dv.date) + ")" + (dv === cur ? " [devis en cours]" : "") + " : total HT " + fmt(t.ht) + " €, TTC " + fmt(t.ttc) + " €, bénéfice " + fmtQ(Math.round(t.pct)) + " %");
     dv.ouvrages.forEach((o, i) => {
       const a = activeLines(o);
-      L.push("  Ouvrage " + (i+1) + " « " + o.name + " » : " + TYPES[o.type].label + (o.variant ? " (option " + o.variant + ")" : "") + ". " + dimText(o, a.Q));
+      L.push("  Ouvrage " + (i+1) + " [ouvrage:" + o.id + "] « " + o.name + " » : " + TYPES[o.type].label + (o.variant ? " (option " + o.variant + ")" : "") + ". " + dimText(o, a.Q));
       L.push("  Valeurs : " + Object.entries(o.d).filter(([k,v]) => has(v)).map(([k,v]) => k + "=" + v).join(", ") + (o.hauvents.length ? " ; hauvents : " + o.hauvents.map(h => h.L + "×" + h.l + " m pente " + h.pente + " %").join(", ") : "") + (o.ouv.length ? " ; ouvertures : " + o.ouv.map(x => x.q + " " + (OUV_TYPES[x.type]||x.type) + " " + x.w + "×" + x.h).join(", ") : "") + (o.fumi.on ? " ; fumidôme " + o.fumi.q : ""));
-      a.lines.forEach(x => L.push("   - " + lineLabel(x.L) + (has(x.L.data.ref) ? " (" + x.L.data.ref + ")" : "") + " : " + fmtQ(x.c.qty) + " " + x.c.unit + (x.c.total ? " = " + fmt(x.c.total) + " € HT" : " (sans prix)") + (x.L.data.fourn ? " – fournisseur " + x.L.data.fourn : "")));
+      a.lines.forEach(x => L.push("   - [" + iaLineRef(o, x.L) + "] " + lineLabel(x.L) + (has(x.L.data.ref) ? " (" + x.L.data.ref + ")" : "") + " : " + fmtQ(x.c.qty) + " " + x.c.unit + (has(x.L.data.pu) ? ", prix " + x.L.data.pu : "") + (x.c.total ? " = " + fmt(x.c.total) + " € HT" : " (sans prix)") + (x.L.data.fourn ? " – fournisseur " + x.L.data.fourn : "")));
+      const offs = []; sectionsOf(o).forEach(sx => sx.lines.forEach(Lx => { if(Lx.data.off) offs.push("[" + iaLineRef(o, Lx) + "] " + lineLabel(Lx)); }));
+      if(offs.length) L.push("   Postes désactivés : " + offs.slice(0, 40).join(" ; "));
+      (o.tubes || []).forEach(t => L.push("   Tube [tube:" + t.id + "] " + (t.sec || "?") + " : " + ((t.pieces || []).filter(p => num(p[0]) > 0).map(p => p[1] + " × " + p[0] + " m").join(" ; ") || (t.ml ? t.ml + " ml" : "")) + ", barres de " + (t.bar || "6") + " m"));
     });
     const ch = dv.chantier || {};
     const chl = [];
@@ -3329,7 +3479,7 @@ function iaCtxClient(c){
     if((ch.photos||[]).length) L.push("  Photos : " + ch.photos.map(p => p.phase + " " + frDate(p.date) + (p.note ? " (" + p.note + ")" : "")).join(", "));
     if((ch.croquis||[]).length) L.push("  Croquis : " + ch.croquis.map(s => s.titre).join(", "));
     if((ch.fournPdf||[]).length) L.push("  Devis fournisseurs : " + ch.fournPdf.map(p => p.fourn + (p.num ? " n° " + p.num : "") + (p.total ? " " + fmt(p.total) + " € HT" : "")).join(" ; "));
-    if(dv.checklist){ const rest = []; dv.checklist.sections.forEach(s => s.items.forEach(it => { if(!it.done) rest.push(it.label); })); if(rest.length) L.push("  Check-list, reste à faire : " + rest.slice(0, 40).join(" ; ")); }
+    if(dv.checklist){ const all = []; dv.checklist.sections.forEach(s => s.items.forEach(it => all.push("[tache:" + it.id + "] " + (it.done ? "✓ " : "☐ ") + s.title + " › " + it.label + (has(it.note) ? " (" + it.note + ")" : "")))); if(all.length) L.push("  Check-list :\n   " + all.slice(0, 120).join("\n   ")); }
     if((dv.iaIgnore||[]).length) L.push("  Ne plus signaler : " + dv.iaIgnore.join(" ; "));
   });
   const prev = IA.convs.filter(x => x.clientId === c.id && x.resume && (!IAS.conv || x.id !== IAS.conv.id)).slice(-5);
@@ -3582,7 +3732,7 @@ function iaMic(){
       if(interim){ const rel = s ? iaSame(s, interim) : 2; if(rel === 2) s = interim; else if(rel === 0) s = s + " " + interim; }
       sess = s; show(sess);
     };
-    r.onerror = ev => { if(ev.error === "not-allowed" || ev.error === "service-not-allowed"){ IAS.recStop = true; toast("Micro refusé : autorisez-le dans le navigateur"); } else if(ev.error === "network"){ IAS.recStop = true; toast("Dictée indisponible sans réseau"); } };
+    r.onerror = ev => { if(ev.error === "not-allowed" || ev.error === "service-not-allowed"){ IAS.recStop = true; toast("Micro refusé : autorisez-le dans le navigateur"); } else if(ev.error === "network"){ IAS.recStop = true; toast(navigator.onLine ? "Le service de dictée de ce navigateur ne répond pas. Sur PC : utilisez Chrome, ou la dictée Windows (touches Windows + H)" : "Dictée indisponible sans réseau"); } };
     r.onend = () => {
       if(IAS.rec !== r) return;
       if(sess){ const rel = done.length ? iaSame(done[done.length - 1], sess) : 0; if(rel === 2 && done.length > (first ? 1 : 0)) done[done.length - 1] = sess; else if(rel !== 1) done.push(sess); }
@@ -3619,7 +3769,8 @@ function iaPlus(){
     inp.addEventListener("change", async () => { const f = inp.files[0]; inp.remove(); if(!f) return;
       try{
         if(f.type === "application/pdf"){ if(f.size > 20e6){ toast("PDF trop lourd (20 Mo maximum)"); return; } const du = await new Promise((res, rej) => { const r = new FileReader(); r.onload = () => res(r.result); r.onerror = rej; r.readAsDataURL(f); }); IAS.att.push({kind:"pdf", label:f.name, data:du.split(",")[1]}); }
-        else { const du = await readPhoto(f); IAS.att.push({kind:"image", label:f.name || "Photo", mt:"image/jpeg", data:du.split(",")[1]}); }
+        else { const du = await readPhoto(f); IAS.att.push({kind:"image", label:f.name || "Photo", mt:"image/jpeg", data:du.split(",")[1]});
+          const dvx = iaDevisOf(iaClient()); if(dvx){ const id = uid(); await MEDIA.put("ph_" + id, du); chOf(dvx).photos.push({id, date:today(), phase:"Avant", note:"Envoyée au chat IA"}); touch(dvx); toast("Photo aussi rangée dans le dossier du chantier"); } }
         md.remove(); iaDraw();
       }catch(e){ toast("Fichier illisible"); }
     });
@@ -3693,7 +3844,8 @@ function iaPreview(m, ai){
   const long = it => String(it.valeur||"").length > 40 || /\n/.test(it.valeur||"");
   const box = el(`<div class="iaprev"><p class="muted small" style="margin:0">Décochez ce que vous ne voulez pas. Vous pouvez corriger les valeurs avant de valider.</p></div>`);
   items.forEach((it, k) => {
-    const row = el(`<div class="iait"><label class="check"><input type="checkbox" checked> <b>${esc(it.libelle || it.cle)}</b></label>${long(it) ? `<textarea rows="3">${esc(it.valeur)}</textarea>` : `<input type="text" value="${esc(it.valeur)}">`}${a.type === "oublis" ? `<button type="button" class="btn sm ghost" data-ign>Ne plus signaler</button>` : ""}</div>`);
+    const cur = c ? iaCurrent(it.cle, c) : null;
+    const row = el(`<div class="iait"><label class="check"><input type="checkbox" checked> <b>${esc(it.libelle || it.cle)}</b></label>${cur !== null && cur !== undefined ? `<span class="muted small">Actuellement : ${esc(String(cur) || "vide")}</span>` : ""}${long(it) ? `<textarea rows="3">${esc(it.valeur)}</textarea>` : `<input type="text" value="${esc(it.valeur)}">`}${a.type === "oublis" ? `<button type="button" class="btn sm ghost" data-ign>Ne plus signaler</button>` : ""}</div>`);
     $("input[type=checkbox]", row).addEventListener("change", e => { it.on = e.target.checked; row.classList.toggle("off", !it.on); });
     $("textarea, input[type=text]", row).addEventListener("input", e => { it.valeur = e.target.value; });
     const ig = $("[data-ign]", row); if(ig) ig.addEventListener("click", () => { const dv = iaDevisOf(c); if(!dv) return; dv.iaIgnore = dv.iaIgnore || []; if(!dv.iaIgnore.includes(it.libelle)) dv.iaIgnore.push(it.libelle); touch(dv); it.on = false; row.remove(); toast("Ne sera plus signalé pour ce devis"); });
@@ -3719,11 +3871,86 @@ function iaParse(items){
       if(r === "type") o.type = it.valeur; else if(r === "nom") o.nom = it.valeur; else if(r === "fumidome") o.fumi = it.valeur;
       else if((q = r.match(/^hauvent(\d+)\.(\w+)$/))) (o.hv[q[1]] = o.hv[q[1]] || {})[q[2]] = it.valeur;
       else if((q = r.match(/^ouv(\d+)\.(\w+)$/))) (o.ouv[q[1]] = o.ouv[q[1]] || {})[q[2]] = it.valeur;
+      else if((q = r.match(/^tube(\d+)\.(\w+)$/))) ((o.tu = o.tu || {})[q[1]] = o.tu[q[1]] || {})[q[2]] = it.valeur;
+      else if((q = r.match(/^tole(\d+)\.(\w+)$/))) ((o.to = o.to || {})[q[1]] = o.to[q[1]] || {})[q[2]] = it.valeur;
       else if(r === "ligne") o.lignes.push(it);
       else o.d[r] = it.valeur;
     }
   });
   return P;
+}
+/* V3 : l'IA modifie n'importe quel élément repéré par sa référence [type:id] donnée dans le dossier. Rien n'est appliqué sans la case cochée et Valider. */
+function iaLineRef(o, L){ return L.dyn ? "dyn:" + o.id + "~" + L.key : "ligne:" + L.data.id; }
+const IA_OUI = v => /^(oui|vrai|true|1|x|fait|ok|coch)/i.test(String(v || "").trim());
+function iaFind(c, kind, id){
+  const dvs = c ? DB.devis.filter(d => d.clientId === c.id) : DB.devis;
+  for(const dv of dvs){
+    if(kind === "devis" && dv.id === id) return {dv};
+    for(const o of dv.ouvrages){
+      if(kind === "ouvrage" && o.id === id) return {dv, o};
+      if(kind === "tube"){ const t = (o.tubes || []).find(x => x.id === id); if(t) return {dv, o, t}; }
+      if(kind === "ligne"){ for(const k of Object.keys(o.sec)){ const ln = o.sec[k].find(x => x.id === id); if(ln) return {dv, o, ln, arr:o.sec[k]}; } }
+      if(kind === "dyn"){ const [oid, key] = id.split("~"); if(o.id === oid){ const L = sectionsOf(o).flatMap(sx => sx.lines).find(x => x.key === key); if(L) return {dv, o, L}; } }
+    }
+    if(kind === "tache" && dv.checklist) for(const sx of dv.checklist.sections){ const it = sx.items.find(x => x.id === id); if(it) return {dv, sx, it}; }
+  }
+  return null;
+}
+const IA_REF = /^(devis|ouvrage|ligne|dyn|tube|tache):([^.]+)\.(\w+)$/;
+function iaCurrent(cle, c){
+  const k = String(cle || "").trim(); let m;
+  if(c && (m = k.match(/^client\.(\w+)$/))) return c[m[1]] || "";
+  if((m = k.match(IA_REF))){
+    const f = iaFind(c, m[1], m[2]); if(!f) return null; const ch = m[3];
+    if(f.it) return ch === "fait" ? (f.it.done ? "fait" : "à faire") : ch === "note" ? f.it.note : f.it.label;
+    if(f.t) return ch === "sec" ? f.t.sec : ch === "barre" ? f.t.bar : ch === "ml" ? f.t.ml : (f.t.pieces || []).map(p => p[1] + " × " + p[0]).join(" ; ");
+    const d = f.ln || (f.L && f.L.data);
+    if(d){ const map = {qte:"qty", prix:"pu", fournisseur:"fourn"}; if(ch === "actif") return d.off ? "non" : "oui"; if(ch === "libelle") return f.ln ? f.ln.label : lineLabel(f.L); return d[map[ch] || ch] || ""; }
+    if(f.o) return ch === "nom" ? f.o.name : ch === "descriptif" ? (f.o.desc || "") : (f.o.d[ch] || "");
+    if(f.dv) return ch === "statut" ? f.dv.statut : ch === "titre" ? f.dv.titre : (f.dv[ch] || "");
+  }
+  return null;
+}
+function iaEdit(c, items){
+  const rest = [], done = [], dirty = new Set();
+  items.forEach(it => {
+    const k = String(it.cle || "").trim(), v = it.valeur == null ? "" : String(it.valeur).trim(); let m;
+    if(c && (m = k.match(/^client\.(\w+)$/)) && CFIELDS.some(f => f[0] === m[1])){ c[m[1]] = v; done.push(it); return; }
+    if((m = k.match(/^chantier\.(note|debut|fin|equipe)$/))){ const dv = iaDevisOf(c); if(dv){ chOf(dv)[m[1]] = v; dirty.add(dv); done.push(it); return; } }
+    if(k === "tache.nouvelle"){ const dv = iaDevisOf(c); if(!dv) return rest.push(it);
+      dv.checklist = dv.checklist || {title:"Check-list " + dv.num, sections:[]};
+      const title = has(it.libelle) && dv.checklist.sections.some(x => x.title === it.libelle) ? it.libelle : "À faire (IA)";
+      let sx = dv.checklist.sections.find(x => x.title === title); if(!sx){ sx = {id:uid(), title, note:"", items:[]}; dv.checklist.sections.push(sx); }
+      sx.items.push(clItem(v || it.libelle)); dirty.add(dv); done.push(it); return; }
+    if(!(m = k.match(IA_REF))) return rest.push(it);
+    const f = iaFind(c, m[1], m[2]), ch = m[3]; if(!f) return rest.push(it);
+    const del = ch === "supprimer" && IA_OUI(v || "oui");
+    if(f.it){ if(del) f.sx.items = f.sx.items.filter(x => x !== f.it); else if(ch === "fait") f.it.done = IA_OUI(v); else if(ch === "note") f.it.note = v; else if(ch === "libelle") f.it.label = v; }
+    else if(f.t){ if(del){ f.o.tubes = f.o.tubes.filter(x => x !== f.t); delete f.o.dyn["tube_" + f.t.id]; }
+      else if(ch === "sec") f.t.sec = v; else if(ch === "barre") f.t.bar = iaNum(v) || "6"; else if(ch === "ml"){ f.t.ml = iaNum(v); f.t.pieces = [["", "1"]]; }
+      else if(ch === "longueurs"){ const pc = iaPieces(v); if(pc.length){ f.t.pieces = pc; f.t.ml = ""; } }
+      tubeSync(f.o, f.t); }
+    else if(f.ln || f.L){ const d = f.ln || f.L.data;
+      if(del){ if(f.ln && f.ln.custom) f.arr.splice(f.arr.indexOf(f.ln), 1); else d.off = true; }
+      else if(ch === "actif") d.off = !IA_OUI(v);
+      else if(ch === "qte"){ d.qty = iaNum(v); d.off = false; } else if(ch === "prix") d.pu = iaNum(v);
+      else if(ch === "marge" || ch === "chute") d[ch] = iaNum(v); else if(ch === "ref") d.ref = v; else if(ch === "fournisseur") d.fourn = v;
+      else if(ch === "libelle" && f.ln) f.ln.label = v; }
+    else if(f.o){ if(del) f.dv.ouvrages = f.dv.ouvrages.filter(x => x !== f.o); else if(ch === "nom") f.o.name = v; else if(ch === "descriptif") f.o.desc = v; else if(ch === "toit"){ if(TOITS[v]) f.o.d.toit = v; } else if(ch in f.o.d || ch === "portL" || ch === "portH") f.o.d[ch] = iaNum(v); }
+    else if(f.dv){ if(ch === "titre") f.dv.titre = v; else if(ch === "tva") f.dv.tva = iaNum(v) || f.dv.tva; else if(ch === "statut" && typeof setStatut === "function") setStatut(f.dv, v); }
+    dirty.add(f.dv); done.push(it);
+  });
+  dirty.forEach(dv => { logDv(dv, "Modifié depuis le chat IA"); touch(dv); });
+  if(done.length) saveNow();
+  return {rest, done:done.length};
+}
+function iaPieces(v){ return String(v || "").split(/[;\n]+/).map(p => { const m = p.match(/(\d+)\s*[x×*]\s*(\d+(?:[.,]\d+)?)/i); return m ? [m[2].replace(".", ","), m[1]] : null; }).filter(Boolean); }
+function iaTole(o, t){
+  const parts = String(t.dims || "").split(/[;\n]+/).map(p => { const m = p.match(/(\d+)\s*[x×*]\s*(\d+(?:[.,]\d+)?)\s*[x×*]\s*(\d+(?:[.,]\d+)?)/i); return m ? [num(m[1]), num(m[2]), num(m[3])] : null; }).filter(Boolean);
+  const mm = parts.some(p => p[1] > 20 || p[2] > 20), area = parts.reduce((a, p) => a + p[0] * p[1] * p[2] / (mm ? 1e6 : 1), 0);
+  const sec = o.sec.tubes ? "tubes" : o.sec.commun ? "commun" : Object.keys(o.sec)[0];
+  const lab = (t.designation || "Tôle acier") + (has(t.epaisseur) ? " " + iaNum(t.epaisseur) + " mm" : "");
+  o.sec[sec].push({id:uid(), label:lab, unit:"m²", nu:"m²", unitSet:true, f:null, list:null, off:false, ref:"Débit : " + parts.map(p => p[0] + " × " + fmtQ(p[1]) + "×" + fmtQ(p[2]) + (mm ? " mm" : " m")).join(", "), qty:String(Math.round(area * 100) / 100).replace(".", ","), pu:"", chute:"", marge:"", custom:true});
 }
 function iaAddLine(o, label, val){
   const v = String(val || "").replace(/m2\b/g, "m²").replace(/ml\b/g, " ml ");
@@ -3737,7 +3964,14 @@ function iaOuvrages(dv, P){
     const s = P.o[n]; let o = dv.ouvrages[n-1];
     if(!o){ const ty = TYPES[String(s.type||"").trim()] ? String(s.type).trim() : "complet"; o = newOuvrage(ty, dv.ouvrages.length + 1); dv.ouvrages.push(o); }
     if(has(s.nom)) o.name = String(s.nom).trim();
-    Object.entries(s.d).forEach(([k,v]) => { if(k === "toit"){ const t = String(v).trim(); if(TOITS[t]) o.d.toit = t; } else if(k in o.d) o.d[k] = iaNum(v); });
+    if(has(s.d.descriptif)){ o.desc = String(s.d.descriptif).trim(); delete s.d.descriptif; }
+    Object.entries(s.d).forEach(([k,v]) => { if(k === "toit"){ const t = String(v).trim(); if(TOITS[t]) o.d.toit = t; } else if(k === "portT"){ const t = String(v).trim(); if(PORT_T[t]) o.d.portT = t; } else if(k in o.d || k === "portL" || k === "portH") o.d[k] = iaNum(v); });
+    Object.keys(s.tu || {}).sort((a,b) => a-b).forEach(k => { const t = s.tu[k];
+      const pieces = iaPieces(t.longueurs);
+      if(TYPES[o.type].sections.includes("tubes")){ o.tubes = o.tubes || []; o.tubes.push({id:uid(), sec:String(t.sec || "").trim(), bar:iaNum(t.barre) || "6", kerf:"3", ml:pieces.length ? "" : iaNum(t.ml), pieces:pieces.length ? pieces : [["", "1"]]}); }
+      else iaAddLine(o, String(t.sec || "Tube").trim(), (iaNum(t.ml) || "") + " ml");
+    });
+    Object.keys(s.to || {}).sort((a,b) => a-b).forEach(k => iaTole(o, s.to[k]));
     if(has(s.fumi)){ o.fumi.on = num(iaNum(s.fumi)) > 0; o.fumi.q = iaNum(s.fumi) || "1"; }
     Object.keys(s.hv).sort().forEach(k => { const h = s.hv[k]; o.hauvents.push({id:uid(), L:iaNum(h.L) || o.d.L || "", l:iaNum(h.l) || "3", pente:iaNum(h.pente) || "10"}); });
     Object.keys(s.ouv).sort().forEach(k => { const x = s.ouv[k], t = String(x.type||"").trim(); o.ouv.push({id:uid(), type:OUV_TYPES[t] ? t : "sect", w:iaNum(x.w) || "4", h:iaNum(x.h) || "4", q:iaNum(x.q) || "1"}); });
@@ -3788,10 +4022,13 @@ function iaApply(a, items, c){
       return "fiche " + clientName(cl) + ", devis " + d.num + " (" + d.ouvrages.length + " ouvrage" + (d.ouvrages.length > 1 ? "s" : "") + "), fiche chantier et check-list créés";
     }
     case "modifier_devis": {
-      const dv = iaDevisOf(c); if(!dv) throw new Error("Ce client n’a pas encore de devis");
-      if(has(P.devis.titre)) dv.titre = String(P.devis.titre).trim();
-      iaOuvrages(dv, P); logDv(dv, "Modifié depuis le chat IA"); touch(dv); render();
-      return "devis " + dv.num + " modifié (" + items.length + " changement" + (items.length > 1 ? "s" : "") + ")";
+      const E = iaEdit(c, items), P2 = iaParse(E.rest.filter(x => !/^(client|chantier)\./.test(x.cle || "")));
+      const dv = iaDevisOf(c);
+      if(Object.keys(P2.o).length || has(P2.devis.titre)){ if(!dv) throw new Error("Ce client n’a pas encore de devis");
+        if(has(P2.devis.titre)) dv.titre = String(P2.devis.titre).trim();
+        iaOuvrages(dv, P2); logDv(dv, "Modifié depuis le chat IA"); touch(dv); }
+      saveNow(); render();
+      return items.length + " changement" + (items.length > 1 ? "s" : "") + " appliqué" + (items.length > 1 ? "s" : "") + (dv ? " (devis " + dv.num + ")" : "");
     }
     case "note_client": {
       const add = items.map(x => x.valeur || x.libelle).filter(has).join("\n");
@@ -3799,6 +4036,7 @@ function iaApply(a, items, c){
       return "ajouté à la note de " + clientName(c);
     }
     case "taches": {
+      const E = iaEdit(c, items); items = E.rest; if(!items.length){ render(); return E.done + " changement" + (E.done > 1 ? "s" : "") + " dans la check-list"; }
       const dv = iaDevisOf(c); if(!dv) throw new Error("Ce client n’a pas encore de devis, donc pas de check-list");
       dv.checklist = dv.checklist || {title:"Check-list " + dv.num, sections:[]};
       let s = dv.checklist.sections.find(x => x.title === "À faire (IA)");
@@ -3899,7 +4137,7 @@ function migrate(){
   if("serviceWorker" in navigator && /^https?:$/.test(location.protocol)) navigator.serviceWorker.register("sw.js").catch(() => {});
   if(syncOn() && SYNC.auto!==false) setTimeout(() => syncNow(true), 1500);
   window.addEventListener("online", () => syncSchedule());
-  document.addEventListener("visibilitychange", () => { if(document.hidden) saveNow(); });
+  document.addEventListener("visibilitychange", () => { if(document.hidden){ saveNow(); if(syncOn() && SYNC.auto !== false && dataHash() !== SYNC.hash){ clearTimeout(syncTimer); syncNow(true); } } else if(syncOn() && SYNC.auto !== false) syncNow(true); });
 })();
 </script>
 </body>
