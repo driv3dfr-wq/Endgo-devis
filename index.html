@@ -3457,8 +3457,8 @@ function renderIA(main){
   });
   const ta = $("#iaIn", comp);
   ta.addEventListener("input", () => iaGrow(ta));
-  ta.addEventListener("keydown", e => { if(e.key === "Enter" && (e.ctrlKey || e.metaKey)){ e.preventDefault(); iaSend(ta.value); } });
-  $("#iaSend", comp).addEventListener("click", () => { if(IAS.rec){ IAS.recStop = true; IAS.rec.stop(); } iaSend(ta.value); });
+  ta.addEventListener("keydown", e => { if(e.key === "Enter" && (e.ctrlKey || e.metaKey)){ e.preventDefault(); iaMicCut(); iaSend(ta.value); } });
+  $("#iaSend", comp).addEventListener("click", () => { iaMicCut(); iaSend($("#iaIn").value); });
   $("#iaMic", comp).addEventListener("click", iaMic);
   $("#iaPlus", comp).addEventListener("click", iaPlus);
   $("#iaFort", comp).addEventListener("change", e => { IAS.fort = e.target.checked; });
@@ -3543,23 +3543,53 @@ function iaQcmEl(qs, live){
 
 /* ---------- Micro, haut-parleur, pièces jointes ---------- */
 function iaMicUi(on){ const b = $("#iaMic"); if(!b) return; b.innerHTML = on ? '<span class="sq"></span>' : "🎤"; b.classList.toggle("on", on); b.setAttribute("aria-label", on ? "Arrêter la dictée" : "Dicter"); }
+/* Compare deux morceaux de dictée : 1 = b déjà contenu dans a, 2 = b reprend a et va plus loin (on garde b), 0 = suite nouvelle. */
+function iaSame(a, b){
+  const w = x => x.toLowerCase().replace(/[^\p{L}\p{N}\s]/gu, "").split(/\s+/).filter(Boolean);
+  const A = w(a), B = w(b); if(!B.length) return 1; if(!A.length) return 2;
+  let k = 0; while(k < A.length && k < B.length && A[k] === B[k]) k++;
+  const tailA = A.slice(-B.length).join(" ");
+  if(k === B.length || tailA === B.join(" ")) return 1;
+  if(k === A.length || k >= Math.max(3, Math.ceil(A.length * 0.6))) return B.length >= A.length ? 2 : 1;
+  return 0;
+}
+function iaMicCut(){ const r = IAS.rec; if(!r) return; IAS.recStop = true; IAS.rec = null; iaMicUi(false); try{ r.abort(); }catch(e){} }
 function iaMic(){
   const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
   if(!SR){ toast("Dictée indisponible sur ce navigateur"); return; }
   if(IAS.rec){ IAS.recStop = true; IAS.rec.stop(); return; }
-  const ta = $("#iaIn"); if(!ta) return;
-  const base = ta.value.trim(); let finals = "";
-  const join = (x) => [base, finals, x].filter(s => s && s.trim()).join(" ").replace(/\s+/g, " ");
+  if(!$("#iaIn")) return;
+  /* Android (Chrome) renvoie en mode continu des résultats cumulés ou répétés : on dicte par phrases courtes relancées
+     automatiquement, et le texte de chaque phrase est recalculé en entier à chaque résultat (jamais ajouté en double). */
+  const android = /Android/i.test(navigator.userAgent), low = x => x.toLowerCase();
+  const first = $("#iaIn").value.trim(), done = first ? [first] : [];
+  let sess = "";
+  const show = (x) => { const ta = $("#iaIn"); if(!ta) return; ta.value = done.concat([x]).filter(t => t && t.trim()).join(" ").replace(/\s+/g, " "); iaGrow(ta); };
   const start = () => {
     let r; try{ r = new SR(); }catch(e){ toast("Dictée indisponible"); IAS.rec = null; iaMicUi(false); return; }
-    r.lang = "fr-FR"; r.continuous = true; r.interimResults = true;
+    r.lang = "fr-FR"; r.continuous = !android; r.interimResults = true;
     r.onresult = ev => {
-      let interim = "";
-      for(let k = ev.resultIndex; k < ev.results.length; k++){ const t = ev.results[k][0].transcript.trim(); if(ev.results[k].isFinal) finals = (finals + " " + t).trim(); else interim += " " + t; }
-      ta.value = join(interim); iaGrow(ta);
+      if(IAS.rec !== r) return;
+      const fin = []; let interim = "";
+      for(let k = 0; k < ev.results.length; k++){
+        const t = ev.results[k][0].transcript.trim(); if(!t) continue;
+        if(ev.results[k].isFinal){
+          const p = fin[fin.length - 1], rel = p ? iaSame(p, t) : 0;
+          if(rel === 1) continue; if(rel === 2) fin[fin.length - 1] = t; else fin.push(t);
+        } else interim = t;
+      }
+      let s = fin.join(" ");
+      if(interim){ const rel = s ? iaSame(s, interim) : 2; if(rel === 2) s = interim; else if(rel === 0) s = s + " " + interim; }
+      sess = s; show(sess);
     };
     r.onerror = ev => { if(ev.error === "not-allowed" || ev.error === "service-not-allowed"){ IAS.recStop = true; toast("Micro refusé : autorisez-le dans le navigateur"); } else if(ev.error === "network"){ IAS.recStop = true; toast("Dictée indisponible sans réseau"); } };
-    r.onend = () => { if(!IAS.recStop && IAS.rec === r){ start(); return; } if(IAS.rec === r){ IAS.rec = null; iaMicUi(false); ta.value = join(""); iaGrow(ta); } };
+    r.onend = () => {
+      if(IAS.rec !== r) return;
+      if(sess){ const rel = done.length ? iaSame(done[done.length - 1], sess) : 0; if(rel === 2 && done.length > (first ? 1 : 0)) done[done.length - 1] = sess; else if(rel !== 1) done.push(sess); }
+      sess = "";
+      if(!IAS.recStop && !document.hidden){ start(); return; }
+      IAS.rec = null; iaMicUi(false); show("");
+    };
     IAS.rec = r;
     try{ r.start(); }catch(e){ IAS.rec = null; iaMicUi(false); }
   };
