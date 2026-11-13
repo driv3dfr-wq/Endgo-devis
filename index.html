@@ -672,7 +672,7 @@ function tour(){
     ["👋", "Bienvenue", "Trois choses à retenir pour utiliser le logiciel au quotidien. Ça prend 30 secondes."],
     ["🎤", "Nouveau projet", "Sur l’accueil, le gros bouton « Nouveau projet » ouvre un brouillon avec l’IA. Tu parles, tu envoies des photos et des plans, tu poses toutes tes questions, comme dans l’appli Claude."],
     ["📝", "Le brouillon ne touche à rien", "Dans le brouillon, tu peux tout essayer : rien n’est enregistré dans un devis ni une fiche client. Tu peux aussi y ajouter un travail fait dans l’appli Claude (bouton 📥) : tout part ensemble au dossier."],
-    ["✅", "Mon dossier est prêt", "Quand c’est bon, ce bouton demande à l’IA un récap propre. Tu le relis, tu le corriges, puis tu l’envoies au dossier client (la fiche se crée depuis le brouillon avec « 👤 Créer la fiche client ») : l’IA y prépare le devis."],
+    ["✅", "Mon dossier est prêt", "Quand c’est bon, ce bouton demande à l’IA un récap propre. Tu le relis, tu le corriges, puis tu l’envoies au dossier client avec les photos et schémas. Rien n’est créé à l’envoi : l’IA du dossier te propose ensuite de préparer le devis."],
     ["👍", "Rien sans ta validation", "L’IA propose, tu valides case par case. Et si tu t’es trompé, « ↩ Annuler » remet tout comme avant."]
   ];
   let i = 0;
@@ -4333,20 +4333,44 @@ function iaTransfer(text){
   const src0 = IAS.conv, pre = src0 && src0.cid && getClient(src0.cid);
   const guess = pre || DB.clients.find(x => { const n = clientName(x).toLowerCase().trim(); return n.length > 2 && low.includes(n); });
   if(!DB.clients.length){ modal("Créer d’abord la fiche client", `<p style="margin:0">Il n’y a encore aucun dossier client. Dans le brouillon, touche « 👤 Créer la fiche client » : l’IA la prépare avec ce qu’elle sait, tu valides, puis tu pourras envoyer le récap au dossier.</p>`); return; }
-  const box = el(`<div style="display:flex;flex-direction:column;gap:10px"><p class="muted small" style="margin:0">Relis et corrige si besoin. L’IA du dossier va s’en servir pour préparer la fiche client et le devis ; tu valideras chaque élément avant qu’il soit enregistré.</p>
+  /* Pièces du brouillon : photos et PDF envoyés, schémas proposés par l’IA. */
+  const bd = IAS.data, pieces = []; let ni = 0, nd = 0;
+  ((bd && bd.api) || []).forEach(m => { if(m.role !== "user" || !Array.isArray(m.content)) return; m.content.forEach(b => {
+    if(b.type === "image" && b.source && b.source.type === "base64") pieces.push({nom:"photo-brouillon-" + (++ni) + ".jpg", label:"Photo " + ni, data:"data:" + b.source.media_type + ";base64," + b.source.data});
+    if(b.type === "document" && b.source && b.source.type === "base64"){ nd++; const n = String(b.title || "document-" + nd).replace(/\.pdf$/i, ""); pieces.push({nom:n + ".pdf", label:"PDF " + n, data:"data:application/pdf;base64," + b.source.data}); }
+  }); });
+  ((bd && bd.view) || []).forEach(m => { if(m.role === "ia" && m.res) (m.res.actions || []).forEach(a => { if(a.type === "schema") pieces.push({sch:a, nom:"schemas-" + slug(a.titre || "batiment"), label:"Schémas : " + (a.titre || "bâtiment")}); }); });
+  const box = el(`<div style="display:flex;flex-direction:column;gap:10px"><p class="muted small" style="margin:0">Relis et corrige si besoin. Rien n’est créé à l’envoi : l’IA du dossier lit le récap et les pièces, te dit ce qui manque, puis te propose de préparer le devis quand tu veux.</p>
     <textarea rows="12" style="font-size:.9rem">${esc(text)}</textarea>
+    ${pieces.length ? `<div><p class="small" style="margin:0 0 4px"><b>Pièces à joindre</b> <span class="muted">(rangées dans le Drive du client, dossier Documents)</span></p>${pieces.map((x, i) => `<label class="check" style="display:flex"><input type="checkbox" data-pc="${i}" checked> ${esc(x.label)}</label>`).join("")}</div>` : ""}
     <p class="muted small" style="margin:0">Le client n’est pas dans la liste ? Ferme, touche « 👤 Créer la fiche client » dans le brouillon, puis reviens ici.</p>
     <label class="f"><span>Dossier client</span><select><option value="" ${guess ? "" : "selected"} disabled>Choisir le dossier client…</option>${DB.clients.slice().sort((a,b) => clientName(a).localeCompare(clientName(b))).map(x => `<option value="${x.id}" ${guess && guess.id === x.id ? "selected" : ""}>${esc(clientName(x))}</option>`).join("")}</select></label></div>`);
   modal("📤 Envoyer au dossier client", box, [{label:"Annuler", cls:"ghost"}, {label:"Envoyer au dossier", cls:"primary", onClick:() => {
-    const t = $("textarea", box).value.trim(), cid = $("select", box).value;
+    const t = $("textarea", box).value.trim(), cid = $("select", box).value, pick = $$("[data-pc]", box).filter(x => x.checked).map(x => pieces[+x.dataset.pc]);
     if(!t){ toast("Le récap est vide"); return false; }
     if(!cid){ toast("Choisis le dossier client"); return false; }
     if(IAS.busy){ toast("L’IA répond encore, patientez"); return false; }
     const src = IAS.conv; if(src && src.br){ src.envoye = today(); iaSaveConv(); }
     IA.mode = "dossier"; IA.sel = cid; IAS.conv = null; IAS.data = null; iaStore();
     if(DB.ui.tab !== "ia") setTab("ia"); else render();
-    const ask = "Complète la fiche de ce client et crée son projet (devis, fiche chantier, check-list) ou mets à jour son devis à partir de ce dossier. Propose les actions à valider ; pose-moi des questions en QCM seulement s’il manque une information indispensable.";
-    iaSend("[Dossier préparé en brouillon]\n" + t + "\n\n" + ask, {show:"📤 Dossier préparé en brouillon :\n" + t});
+    const cl = getClient(cid);
+    (async () => {
+      const noms = [];
+      if(pick.length && syncOn()){
+        toast("Rangement de " + pick.length + " pièce" + (pick.length > 1 ? "s" : "") + " dans le Drive de " + clientName(cl) + "…");
+        for(const x of pick){
+          try{
+            const files = [];
+            if(x.sch){ const P = iaSchP(x.sch, cl).P, rr = schAll(P); if(rr.err) continue; for(const [v, tt] of SCH_VUES) files.push({nom:x.nom + "-" + v + ".png", data:await schPng(rr[v], 1800), desc:"Schéma " + tt}); }
+            else files.push({nom:x.nom, data:x.data, desc:x.label});
+            for(const f of files){ const res = await syncCall({action:"putMedia", name:f.nom, data:f.data, desc:f.desc + " (brouillon du " + frDate(today()) + ")", client:{id:cl.id, nom:clientName(cl)}, sub:"Documents"}); if(res && res.ok !== false) noms.push(f.nom); }
+          }catch(e){}
+        }
+      }
+      const ask = "Garde ce dossier comme base pour le devis. Ne crée rien maintenant et ne propose aucune action : réponds en quelques lignes avec ce que tu as retenu et ce qui manque encore pour chiffrer (lis les pièces utiles avec lire_fichier), puis demande-moi en QCM si je veux que tu prépares le devis maintenant (Oui, prépare le devis / Plus tard).";
+      iaSend("[Dossier préparé en brouillon]\n" + t + (noms.length ? "\n\n[Pièces du brouillon rangées dans le Drive du client (Documents) : " + noms.join(", ") + "]" : "") + "\n\n" + ask,
+        {show:"📤 Dossier préparé en brouillon :\n" + t + (noms.length ? "\n\n📎 " + noms.length + " pièce" + (noms.length > 1 ? "s" : "") + " rangée" + (noms.length > 1 ? "s" : "") + " dans le Drive" : "")});
+    })();
   }}]);
 }
 function iaImport(){
