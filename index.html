@@ -126,8 +126,8 @@ a.link{color:var(--royal)}
 .ouv.closed .ouv-body{display:none}
 .qinfo{font-size:.8rem;color:var(--soft);background:var(--card2);border:1px dashed var(--line);border-radius:8px;padding:7px 10px}
 .opts{display:flex;flex-direction:column;gap:10px;border-top:1px dashed var(--line);padding-top:12px}
-.subrow{display:grid;grid-template-columns:1.6fr 1fr 1fr 1fr auto;gap:8px;align-items:end}
-.subrow.hv{grid-template-columns:1fr 1fr 1fr auto}
+.subrow{display:grid;grid-template-columns:1.6fr 1fr 1fr 1fr 1.2fr auto;gap:8px;align-items:end}
+.subrow.hv{grid-template-columns:1fr 1fr 1fr 1fr auto}
 .subrow .x{background:none;border:none;color:var(--soft);padding:10px 6px}
 .check{display:flex;align-items:center;gap:8px;font-weight:600}
 .check input{width:20px;height:20px;accent-color:var(--accent)}
@@ -188,6 +188,9 @@ select option{background:var(--solid);color:var(--ink)}
 .res table{width:100%;border-collapse:collapse}.res td{padding:4px 2px;border-bottom:1px dashed var(--line);vertical-align:top}.res td.r{text-align:right;white-space:nowrap}
 .disc{border:1px solid var(--danger);color:var(--danger);border-radius:10px;padding:8px 10px;font-size:.82rem;font-weight:600}
 .schema svg{width:100%;height:auto;background:#fff;border-radius:10px;display:block}
+.schbox{display:flex;flex-direction:column;gap:10px}.schtabs{gap:6px}.schreg summary{cursor:pointer;font-weight:700;padding:4px 0}.schreg .grid{margin-top:8px}
+.poidsw{overflow-x:auto}.poidsw table{width:100%;border-collapse:collapse;font-size:.88rem}.poidsw th,.poidsw td{padding:5px 6px;border-bottom:1px solid var(--line);text-align:left;vertical-align:top}.poidsw .r{text-align:right;white-space:nowrap}.poidsw tr.ph td{background:var(--card2)}.poidsw tfoot td{font-weight:700}.poidsw small{color:var(--soft)}
+.iaschs{display:grid;grid-template-columns:1fr;gap:8px;margin-top:8px}.iaschs .schema{cursor:zoom-in}.iaschs svg{border-radius:8px}
 .pcs{display:grid;grid-template-columns:1fr 90px 70px 28px;gap:6px;align-items:center;margin-bottom:4px}
 .pcs .x{background:none;border:none;color:var(--soft)}
 .micbtn{position:fixed;right:14px;bottom:128px;width:52px;height:52px;border-radius:50%;border:none;background:var(--royal);color:#fff;font-size:1.4rem;box-shadow:var(--shadow);z-index:60}
@@ -358,6 +361,9 @@ main.iamain{padding-bottom:170px}
 .iaatt{display:flex;gap:6px;flex-wrap:wrap}
 .iachip{background:var(--card2);border:1px solid var(--line);border-radius:99px;padding:2px 4px 2px 10px;font-size:.78rem}
 .iachip button{background:none;border:none;color:var(--soft);padding:0 6px}
+.iaact.sch{display:block}
+body.iadrag .iacomp{outline:3px dashed var(--royal);outline-offset:-6px}
+body.iadrag .iacomp::before{content:"Déposez les fichiers ici";display:block;text-align:center;font-weight:700;color:var(--royal);padding:4px}
 .iarow{display:flex;gap:6px;align-items:flex-end}
 .iarow textarea{flex:1;min-height:42px;max-height:160px;resize:none;border-radius:20px;padding:10px 14px}
 .iab{flex:0 0 42px;width:42px;height:42px;border-radius:50%;border:1px solid var(--line);background:var(--card2);color:var(--ink);font-size:1.25rem;line-height:1;display:flex;align-items:center;justify-content:center;padding:0}
@@ -1085,6 +1091,11 @@ function renderDevis(main){
   });
   main.appendChild(add);
 
+  const pk = poidsDevis(dv);
+  if(pk.kg > 0 || pk.kgEnv > 0 || pk.list.some(x => x.r.postes.length)){
+    const pc = el(`<section class="card"><div class="row" style="justify-content:space-between;align-items:center"><div><h2 style="margin:0">Poids et débits</h2><span class="muted small">Structure ≈ <b>${kgTxt(pk.kg)}</b>${pk.kgEnv ? " · enveloppe ≈ " + kgTxt(pk.kgEnv) : ""}${pk.list.some(x => x.r.manque.length) ? " · certains profils ne sont pas renseignés" : ""}</span></div><button class="btn sm" type="button">Voir le détail</button></div></section>`);
+    $("button", pc).addEventListener("click", () => poidsModal(dv)); main.appendChild(pc);
+  }
   const send = el(`<section class="card"><h2>Envoyer</h2><p class="muted small" style="margin:0 0 10px">Le mail s’ouvre dans votre messagerie avec tout le détail. Le devis téléchargé s’ouvre dans le navigateur, d’où vous pouvez l’imprimer ou l’enregistrer en PDF pour le joindre.</p>
     <div class="row"><button class="btn" data-a="four" type="button">Demande de prix fournisseur</button><button class="btn blue" data-a="cli" type="button">Envoyer le devis au client</button><button class="btn" data-a="dl" type="button">Télécharger le devis</button><button class="btn" data-a="wa" type="button">WhatsApp</button><button class="btn" data-a="sms" type="button">SMS</button></div>
     <div class="signinfo">${dv.signature ? `<img src="${dv.signature.img}" alt="Signature"><span>Signé par <b>${esc(dv.signature.nom||"le client")}</b> le ${frDate(dv.signature.date)} à ${esc(dv.signature.heure||"")}${dv.signature.option?" · option "+esc(dv.signature.option)+" retenue":""}</span><button class="btn sm ghost danger" data-a="unsign" type="button">Annuler la signature</button>` : `<button class="btn primary" data-a="sign" type="button">Faire signer le client sur l’écran</button>`}</div></section>`);
@@ -1188,7 +1199,7 @@ function renderOuvrage(dv, o, idx){
     $("button", tb).addEventListener("click", () => toolSchema(dv, o)); body.appendChild(tb);
   }
   if(g==="bat"){
-    const tb = el(`<div class="tools calc"><span class="muted small">Outils :</span><button class="btn sm" type="button" data-tool="schema">Schéma</button><button class="btn sm" type="button" data-tool="nv">Neige et vent</button><button class="btn sm" type="button" data-tool="predim">Pré-dimensionnement</button><button class="btn sm" type="button" data-tool="debit">Débits</button><button class="btn sm" type="button" data-tool="levage">Levage</button></div>`);
+    const tb = el(`<div class="tools calc"><span class="muted small">Outils :</span><button class="btn sm" type="button" data-tool="schema">📐 Schémas</button><button class="btn sm" type="button" data-tool="nv">Neige et vent</button><button class="btn sm" type="button" data-tool="predim">Pré-dimensionnement</button><button class="btn sm" type="button" data-tool="debit">Débits</button><button class="btn sm" type="button" data-tool="levage">Levage</button><button class="btn sm" type="button" data-tool="poids">Poids et débits</button></div>`);
     tb.addEventListener("click", e => { const t = e.target.dataset.tool; if(t) CALC_TOOLS[t](dv, o); });
     body.appendChild(tb);
   }
@@ -1201,9 +1212,10 @@ function renderOuvrage(dv, o, idx){
       const ob = el(`<div><div class="check" style="margin-bottom:6px">Ouvertures (portes, fenêtres)</div><div data-list style="display:flex;flex-direction:column;gap:8px"></div><button class="dashed" type="button" style="margin-top:8px">+ Ajouter une ouverture</button></div>`);
       o.ouv.forEach(x => {
         const r = el(`<div class="subrow"><label class="f"><span>Type</span><select data-k="type">${opts(Object.entries(OUV_TYPES), x.type)}</select></label>
-          ${numField("Largeur (m)",x.w,"w")}${numField("Hauteur (m)",x.h,"h")}${numField("Quantité",x.q,"q")}<button class="x" type="button" aria-label="Retirer">✕</button></div>`);
+          ${numField("Largeur (m)",x.w,"w")}${numField("Hauteur (m)",x.h,"h")}${numField("Quantité",x.q,"q")}<label class="f"><span>Façade</span><select data-k="cote">${opts(Object.entries(SCH_COTES), x.cote || "avant")}</select></label><button class="x" type="button" aria-label="Retirer">✕</button></div>`);
         $$("[data-d]", r).forEach(inp => inp.addEventListener("input", e => { x[inp.dataset.d] = e.target.value; touch(dv); recalc(); }));
         $("[data-k=type]", r).addEventListener("change", e => { x.type = e.target.value; touch(dv); recalc(); });
+        $("[data-k=cote]", r).addEventListener("change", e => { x.cote = e.target.value; touch(dv); });
         $(".x", r).addEventListener("click", () => { o.ouv = o.ouv.filter(y=>y!==x); delete o.dyn["ouv_"+x.id]; touch(dv); render(); });
         $("[data-list]", ob).appendChild(r);
       });
@@ -1213,8 +1225,9 @@ function renderOuvrage(dv, o, idx){
     if(T.hauvent){
       const hb = el(`<div><div class="check" style="margin-bottom:6px">Hauvents</div><div data-list style="display:flex;flex-direction:column;gap:8px"></div><button class="dashed" type="button" style="margin-top:8px">+ Ajouter un hauvent</button></div>`);
       o.hauvents.forEach((h,i) => {
-        const r = el(`<div class="subrow hv">${numField("Hauvent "+(i+1)+" · longueur (m)",h.L,"L")}${numField("Largeur / avancée (m)",h.l,"l")}${numField("Pente (%)",h.pente,"pente")}<button class="x" type="button" aria-label="Retirer">✕</button></div>`);
+        const r = el(`<div class="subrow hv">${numField("Hauvent "+(i+1)+" · longueur (m)",h.L,"L")}${numField("Largeur / avancée (m)",h.l,"l")}${numField("Pente (%)",h.pente,"pente")}<label class="f"><span>Côté</span><select data-k="cote">${opts(Object.entries(SCH_COTES), h.cote || "arriere")}</select></label><button class="x" type="button" aria-label="Retirer">✕</button></div>`);
         $$("[data-d]", r).forEach(inp => inp.addEventListener("input", e => { h[inp.dataset.d] = e.target.value; touch(dv); recalc(); }));
+        $("[data-k=cote]", r).addEventListener("change", e => { h.cote = e.target.value; touch(dv); });
         $(".x", r).addEventListener("click", () => { o.hauvents = o.hauvents.filter(y=>y!==h); Object.keys(o.dyn).forEach(k=>{ if(k.startsWith("hv_"+h.id)) delete o.dyn[k]; }); delete o.sec["hv_"+h.id]; touch(dv); render(); });
         $("[data-list]", hb).appendChild(r);
       });
@@ -1524,37 +1537,8 @@ function showRecap(dv){
     {label:"Demande de prix fournisseur", onClick:()=>{ mailFournisseur(dv); }},
     {label:"Envoyer au client", cls:"blue", onClick:()=>{ mailClient(dv); }},
     {label:"Télécharger le devis", onClick:()=>{ downloadDevis(dv); }},
-    {label:"Envoyer à Donatien (plans)", onClick:()=>{ envoiDessin(dv); }},
     {label:"Fermer", cls:"ghost"}
   ]);
-}
-/* Fiche dessin : les infos utiles au chiffrage des plans (appli D-Riv 3D Metallerie de Donatien) */
-function ficheDessin(dv){
-  const cl = getClient(dv.clientId);
-  const ouvrages = dv.ouvrages.map(o => {
-    const Q = quantities(o), profils = [];
-    (o.sec.ossature||[]).forEach(ln => { if(ln.off) return; const pr = profil(ln.ref), mk = MLKEY[ln.tpl];
-      profils.push({label:ln.label, ref:ln.ref||"", ml: mk ? Q[mk]||0 : null, kg: pr && mk && Q[mk] ? Q[mk]*pr.kgm : null}); });
-    const keep = ["L","l","pente","Hlow","Hhigh","emprise","nbPortiques","nbPoteaux","nbLignesPannes","nbLignesLisses","potML","travML","panML","lisML","gcL","gcPoteaux","clotL","clotPoteaux","nbPortails","nbPortillons","bardBrut","couv"];
-    const q = {}; keep.forEach(k => { if(typeof Q[k]==="number" && isFinite(Q[k])) q[k] = Math.round(Q[k]*1000)/1000; });
-    const kg = profils.reduce((a,x) => a + (x.kg||0), 0);
-    return {name:o.name, type:o.type, typeLabel:TYPES[o.type].label, variant:o.variant||"", dim:dimText(o,Q), d:o.d, q, profils, kg:Math.round(kg),
-      potelets:num(o.d.potelets), entPort:num(o.d.entPort)||6, hauvents:(o.hauvents||[]).map(h => ({L:num(h.L), l:num(h.l)})),
-      ouvertures:(o.ouv||[]).map(x => ({type:OUV_TYPES[x.type], w:num(x.w), h:num(x.h), n:num(x.q)})),
-      tubes:(o.tubes||[]).map(x => ({sec:x.sec||"", ml:Math.round(tubeCalc(x).ml*100)/100, pieces:(x.pieces||[]).length})),
-      schema: TYPES[o.type].geo==="bat" ? schemaSvg(o) : ""};
-  });
-  return {format:"endgo-dessin", v:1, envoye:new Date().toISOString(), id:dv.id, num:dv.num, titre:dv.titre||"", date:dv.date,
-    client: cl ? {nom:clientName(cl), ville:cl.ville||""} : null, ouvrages, kg: ouvrages.filter(o => !o.variant).reduce((a,o) => a + o.kg, 0)};
-}
-async function envoiDessin(dv){
-  const f = ficheDessin(dv), name = "dessin-" + dv.num + ".json", txt = JSON.stringify(f);
-  try{
-    const file = new File([txt], name, {type:"application/json"});
-    if(navigator.canShare && navigator.canShare({files:[file]})){ await navigator.share({files:[file], title:"Plans " + dv.num, text:"Devis " + dv.num + " à dessiner"}); toast("Fiche dessin envoyée"); return; }
-  }catch(e){ if(e && e.name==="AbortError") return; }
-  download(name, txt, "application/json");
-  toast("Fiche dessin téléchargée : envoyez-la à Donatien");
 }
 function rentaHtml(t){
   const min = num(S("margeMin")), low = t.ht && t.pct < min;
@@ -1686,8 +1670,9 @@ function downloadDevis(dv){
     const rows = a.lines.filter(x => x.c.qty>0 && x.c.total>0).map(x => { st += x.c.total; return `<tr><td>${esc(lineLabel(x.L))}${has(x.L.data.ref)?`<br><small>${esc(x.L.data.ref)}</small>`:""}</td><td class="r">${fmtQ(x.c.qty)}</td><td>${esc(x.c.unit)}</td><td class="r">${x.c.total?fmt(x.c.puClient):"—"}</td><td class="r">${fmt(x.c.total)}</td></tr>`; }).join("");
     return `<div class="ouv"><h3><em>${i}</em>${esc(o.name)} <span>${esc(TYPES[o.type].label)}${o.variant?" · option "+o.variant:""}</span></h3><p class="dim">${esc(dimText(o,a.Q))}</p>${has(o.desc) ? `<p class="desc">${esc(o.desc).replace(/\n/g,"<br>")}</p>` : ""}
       <table><thead><tr><th>Désignation</th><th class="r">Qté</th><th>Unité</th><th class="r">PU HT €</th><th class="r">Total HT €</th></tr></thead><tbody>${rows}</tbody>
-      <tfoot><tr><td colspan="4">Sous-total ${esc(o.name)}</td><td class="r">${fmt(st)}</td></tr></tfoot></table>${schemaOn(o) ? `<div class="schema">${schemaSvg(o)}</div>` : ""}</div>`;
+      <tfoot><tr><td colspan="4">Sous-total ${esc(o.name)}</td><td class="r">${fmt(st)}</td></tr></tfoot></table>${schemaOn(o) ? (TYPES[o.type].geo === "bat" ? schDevisHtml(o) : `<div class="schema">${schemaSvg(o)}</div>`) : ""}</div>`;
   };
+  const poidsH = poidsHtml(dv, true);
   const base = dv.ouvrages.filter(o => !o.variant), vars = dv.ouvrages.filter(o => o.variant);
   const ops = Object.keys(t.options).sort();
   const cliHtml = cl ? `<b>${esc([cl.civ,cl.prenom,cl.nom].filter(has).join(" "))}</b>${cl.societe?"<br>"+esc(cl.societe):""}${has(cl.adresse)?"<br>"+esc(cl.adresse):""}${has(cl.cp)||has(cl.ville)?"<br>"+esc([cl.cp,cl.ville].filter(has).join(" ")):""}${cl.tel?"<br>"+esc(cl.tel):""}${cl.email?"<br>"+esc(cl.email):""}` : "Client non renseigné";
@@ -1715,6 +1700,7 @@ th{background:#F2F4F9;font-size:11px;text-transform:uppercase;letter-spacing:.04
 .totals{margin:20px 0 0 auto;width:320px;break-inside:avoid}.totals td{border:none;padding:4px 8px}.totals tr.ttc td{font-size:17px;font-weight:800;color:#fff;background:#0B1E5B;-webkit-print-color-adjust:exact;print-color-adjust:exact}
 .ck{font-size:18px;text-align:center}
 .schema{margin:12px 0 0;break-inside:avoid}.schema svg{width:100%;max-width:700px;height:auto;display:block;margin:0 auto}
+table.poids{break-inside:auto}table.poids tr.ph td{background:#FAFBFD;-webkit-print-color-adjust:exact;print-color-adjust:exact}.warn{color:#C0392B}
 .cond{white-space:pre-line;color:#46506A;font-size:12px;line-height:1.5}
 .sign{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-top:20px;break-inside:avoid}.sign div{border:1px solid #DDE2EC;border-radius:8px;padding:10px 14px;min-height:110px}.sign small{display:block;color:#66708A;font-size:11px;margin-top:4px}
 @media print{.band{padding:14px 20px}.wrap{padding:10px 20px}}
@@ -1726,6 +1712,7 @@ th{background:#F2F4F9;font-size:11px;text-transform:uppercase;letter-spacing:.04
 ${base.map((o,i) => ouvBlock(o, i+1)).join("")}
 <table class="totals">${t.mo && t.mat ? `<tr><td>Matériaux</td><td class="r">${eur(t.mat)}</td></tr><tr><td>Main-d’œuvre</td><td class="r">${eur(t.mo)}</td></tr>` : ""}<tr><td><b>Total HT</b></td><td class="r"><b>${eur(t.ht)}</b></td></tr><tr><td>TVA ${esc(dv.tva)} %</td><td class="r">${eur(t.tva)}</td></tr><tr class="ttc"><td>Total TTC</td><td class="r">${eur(t.ttc)}</td></tr></table>
 ${optHtml}
+${poidsH ? `<h2>Poids et débits</h2>${poidsH}<p class="dim" style="margin-top:6px">Poids d’après les profils indiqués ; platines, goussets et boulonnerie non comptés.</p>` : ""}
 ${ech.length ? `<h2>Échéancier de paiement</h2><table><thead><tr><th>Échéance</th><th class="r">%</th><th class="r">Montant TTC${ops.length?" (devis de base)":""}</th></tr></thead><tbody>${ech.map(x => `<tr><td>${esc(x[0])}</td><td class="r">${fmtQ(num(x[1]))} %</td><td class="r">${eur(t.ttc*num(x[1])/100)}</td></tr>`).join("")}</tbody></table>` : ""}
 <h2>Conditions</h2><p class="cond">${esc(cond)}</p>
 <div class="sign"><div><b>Bon pour accord – le client</b>${dv.signature ? `<small>Bon pour accord, signé par ${esc(dv.signature.nom||"le client")} le ${frDate(dv.signature.date)} à ${esc(dv.signature.heure||"")}</small><img src="${dv.signature.img}" alt="Signature du client" style="max-width:100%;height:90px;object-fit:contain;display:block;margin-top:6px">` : `<small>Date, signature précédée de la mention « Bon pour accord »</small>`}</div><div><b>ENDGO</b><small>Date et signature</small></div></div>
@@ -2714,13 +2701,626 @@ function schemaSvg(o){
   return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${W} ${H1r+H2+10}"><defs><marker id="ar" viewBox="0 0 10 10" refX="5" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0L10 5L0 10z" fill="#E8730C"/></marker></defs><rect width="100%" height="100%" fill="#fff"/>${g}${g2}</svg>`;
 }
 function toolSchema(dv, o){
+  if(TYPES[o.type].geo === "bat") return schOpen({dv, o});
   const box = el(`<div style="display:flex;flex-direction:column;gap:10px"><div class="schema">${schemaSvg(o)}</div>
     <label class="row small" style="gap:8px"><input type="checkbox" data-sd ${schemaOn(o) || (TYPES[o.type].geo !== "bat" && o.schemaDevis !== false) ?"checked":""} style="width:auto"> Mettre ce schéma sur le devis imprimé</label></div>`);
   $("[data-sd]", box).addEventListener("change", e => { o.schemaDevis = e.target.checked; touch(dv); });
   const m = modal("Schéma : " + o.name, box, [{label:"Télécharger (SVG)",onClick:() => { download(slug(o.name)+"-schema.svg", schemaSvg(o), "image/svg+xml"); return false; }},{label:"Fermer",cls:"primary"}]);
   $(".modal", m).classList.add("wide");
 }
-const CALC_TOOLS = {schema:toolSchema, nv:toolNV, predim:toolPredim, debit:toolDebit, levage:toolLevage};
+const CALC_TOOLS = {schema:toolSchema, nv:toolNV, predim:toolPredim, debit:toolDebit, levage:toolLevage, poids:(dv) => poidsModal(dv)};
+
+/* ================= V3 (13/11) : planche de schémas du bâtiment ================= */
+/* Trois vues générées à partir des données de l’ouvrage (sans IA, gratuit) :
+   1 vue isométrique habillée, 2 écorché de l’ossature, 3 vue en bout (coupe cotée).
+   Repère : x le long du bâtiment (0 → L), y en travers (0 = long pan avant → l = long pan arrière), z vers le haut. */
+const RAL_COL = {"1015":"#E6D2B5","1247":"#C9B27C","3004":"#6B1C23","3009":"#6D342D","5008":"#2F3A44","5010":"#13447C","5014":"#637D96","6005":"#114232","6021":"#89AC76","7015":"#51565C","7016":"#383E42","7021":"#2F3234","7022":"#4B4D46","7024":"#474A50","7030":"#939388","7035":"#CBD0CC","7039":"#6C6960","8004":"#8F4E35","8012":"#5E2F24","8014":"#4A3526","8017":"#45322E","9002":"#E7EBDA","9005":"#0E0E10","9006":"#A1A1A0","9007":"#878581","9010":"#F1ECE1","galva":"#A9AFB3"};
+const SCH_OUV = {sect:"Porte sectionnelle", rideau:"Rideau métallique", portillon:"Porte", fenetre:"Fenêtre"};
+const SCH_COTES = {avant:"long pan avant", arriere:"long pan arrière", gauche:"pignon gauche", droite:"pignon droit"};
+function schM(v){ return (Math.round(v*100)/100).toFixed(2).replace(".", ",") + " m"; }
+function schN(v){ return String(Math.round(v*100)/100).replace(".", ","); }
+function schNum(v){ if(typeof v === "number") return v; const m = String(v == null ? "" : v).replace(/\s/g, "").replace(",", ".").match(/-?\d+(\.\d+)?/); return m ? parseFloat(m[0]) : 0; }
+function schEsc(s){ return String(s == null ? "" : s).replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#39;"}[c])); }
+function schHex(h){ const m = /^#?([0-9a-f]{6})$/i.exec(String(h || "")); const v = m ? parseInt(m[1], 16) : 0x383E42; return [v >> 16 & 255, v >> 8 & 255, v & 255]; }
+function schRgb(c, k, a){ const f = x => Math.max(0, Math.min(255, Math.round(x * k))); return a == null ? `rgb(${f(c[0])},${f(c[1])},${f(c[2])})` : `rgba(${f(c[0])},${f(c[1])},${f(c[2])},${a})`; }
+function schRal(v){ const k = String(v || "").replace(/^RAL\s*/i, "").trim().toLowerCase(); if(RAL_COL[k]) return RAL_COL[k]; if(/^#[0-9a-f]{6}$/i.test(k)) return k; return null; }
+
+/* Paramètres complets et cohérents à partir d’un objet partiel (valeurs manquantes = valeurs par défaut). */
+function schNorm(p){
+  const P = Object.assign({}, p || {});
+  P.L = schNum(P.L); P.l = schNum(P.l);
+  if(!(P.L > 0 && P.l > 0)) return {err:"Il manque la longueur et la largeur du bâtiment."};
+  P.toit = ["1p","1ph","2p","plat"].includes(P.toit) ? P.toit : "2p";
+  P.pente = has0(P.pente) ? schNum(P.pente) : 10;
+  const H = schNum(P.H) || schNum(P.hA) || 4;
+  if(P.toit === "1ph"){ P.hA = schNum(P.hA) || H; P.hB = schNum(P.hB) || P.hA + P.l * P.pente / 100; P.pente = Math.abs(P.hB - P.hA) / P.l * 100; }
+  else if(P.toit === "1p"){ P.hA = H; P.hB = H + P.l * P.pente / 100; }
+  else if(P.toit === "2p"){ P.hA = P.hB = H; P.hR = H + P.l / 2 * P.pente / 100; }
+  else { P.hA = P.hB = H; P.pente = 0; }
+  P.deb = schNum(P.deb);
+  P.entPort = schNum(P.entPort) || 6;
+  P.n = Math.max(2, Math.round(schNum(P.n)) || Math.ceil(P.L / P.entPort) + 1);
+  P.entPannes = schNum(P.entPannes) || 1.5;
+  P.entLisses = schNum(P.entLisses) || 1.5;
+  P.potelets = Math.max(0, Math.round(schNum(P.potelets)));
+  P.structure = P.structure === "treillis" ? "treillis" : "portique";
+  const zmin = Math.min(P.hA, P.hB);
+  P.hp = P.structure === "treillis" ? (schNum(P.hp) > 0 && schNum(P.hp) < zmin ? schNum(P.hp) : Math.round((zmin - 0.15) * 100) / 100) : 0;
+  const a = P.auvent && typeof P.auvent === "object" ? P.auvent : null;
+  P.auvent = a && schNum(a.p) > 0 ? {cote:SCH_COTES[a.cote] ? a.cote : "arriere", p:schNum(a.p), pente:has0(a.pente) ? schNum(a.pente) : 10, L:schNum(a.L), poteaux:!!a.poteaux} : null;
+  if(P.auvent && !(P.auvent.L > 0)) P.auvent.L = ["avant","arriere"].includes(P.auvent.cote) ? P.L : P.l;
+  P.ecl = Math.max(0, Math.round(schNum(P.ecl)));
+  P.ral = String(P.ral || "7016").replace(/^RAL\s*/i, "").trim() || "7016";
+  P.ralToit = String(P.ralToit || P.ral).replace(/^RAL\s*/i, "").trim();
+  P.col = schRal(P.ral) || "#383E42"; P.colToit = schRal(P.ralToit) || P.col;
+  P.bardage = P.bardage === "vertical" ? "vertical" : "horizontal";
+  P.nbEP = Math.max(0, Math.round(schNum(P.nbEP))) || 2;
+  P.ouv = (Array.isArray(P.ouv) ? P.ouv : []).map(x => ({type:SCH_OUV[x.type] ? x.type : "sect", w:schNum(x.w) || 1, h:schNum(x.h) || 2, q:Math.max(1, Math.round(schNum(x.q)) || 1), cote:SCH_COTES[x.cote] ? x.cote : "avant"}));
+  ["titre","poteau","membrure","treillisSec","pannesSec","lissesSec","finition"].forEach(k => { P[k] = String(P[k] || "").trim(); });
+  return P;
+}
+function has0(v){ return v !== undefined && v !== null && String(v).trim() !== ""; }
+
+/* Géométrie commune aux trois vues. */
+function schModel(P){
+  const M = {P};
+  const main = P.toit === "2p" ? [[0,P.hA],[P.l/2,P.hR],[P.l,P.hB]] : [[0,P.hA],[P.l,P.hB]];
+  M.main = main;
+  const zAt = (pts, y) => { for(let i = 0; i < pts.length - 1; i++){ const a = pts[i], b = pts[i+1]; if(y >= a[0] - 1e-9 && y <= b[0] + 1e-9) return a[1] + (b[1]-a[1]) * (b[0] === a[0] ? 0 : (y - a[0]) / (b[0] - a[0])); } return y < pts[0][0] ? pts[0][1] : pts[pts.length-1][1]; };
+  M.zMain = y => zAt(main, y);
+  const A = P.auvent;
+  let prof = main.map(p => p.slice());
+  const slope0 = (main[1][1] - main[0][1]) / (main[1][0] - main[0][0]), n1 = main.length - 1, slope1 = (main[n1][1] - main[n1-1][1]) / (main[n1][0] - main[n1-1][0]);
+  // débord sur les égouts sans auvent
+  if(P.deb > 0 && !(A && A.cote === "avant")) prof.unshift([-P.deb, main[0][1] - slope0 * P.deb]);
+  if(P.deb > 0 && !(A && A.cote === "arriere")) prof.push([P.l + P.deb, main[n1][1] + slope1 * P.deb]);
+  if(A && A.cote === "avant") prof.unshift([-A.p, P.hA - A.p * A.pente / 100]);
+  if(A && A.cote === "arriere") prof.push([P.l + A.p, P.hB - A.p * A.pente / 100]);
+  M.prof = prof;
+  M.zRoof = y => zAt(prof, y);
+  M.x0 = -(P.deb > 0 ? P.deb : 0); M.x1 = P.L + (P.deb > 0 ? P.deb : 0);
+  if(A && A.cote === "gauche") M.x0 = -A.p;
+  if(A && A.cote === "droite") M.x1 = P.L + A.p;
+  // étendue en x de chaque segment du profil (auvent sur long pan : longueur de l’auvent, centrée)
+  M.segX = prof.slice(0, -1).map((a, i) => {
+    const b = prof[i+1];
+    if(A && ((A.cote === "arriere" && a[0] >= P.l - 1e-6) || (A.cote === "avant" && b[0] <= 1e-6))){ const s = Math.min(A.L, P.L); return [(P.L - s)/2, (P.L + s)/2, true]; }
+    return [M.x0, M.x1, false];
+  });
+  M.frames = Array.from({length:P.n}, (_, i) => P.L * i / (P.n - 1));
+  // points de pannes le long du profil
+  const pts = [];
+  prof.slice(0, -1).forEach((a, i) => { const b = prof[i+1], len = Math.hypot(b[0]-a[0], b[1]-a[1]), k = Math.max(1, Math.round(len / P.entPannes));
+    for(let j = (i ? 1 : 0); j <= k; j++) pts.push([a[0] + (b[0]-a[0]) * j / k, a[1] + (b[1]-a[1]) * j / k, i]); });
+  M.pannes = pts;
+  M.yMin = prof[0][0]; M.yMax = prof[prof.length-1][0];
+  M.zTop = Math.max(...prof.map(p => p[1]));
+  // membrure basse des fermes treillis
+  M.zBas = y => P.structure === "treillis" ? Math.min(P.hp, M.zRoof(y) - (y < 0 || y > P.l ? 0.3 : 0.15)) : M.zRoof(y) - 0.32;
+  return M;
+}
+
+/* ---------- Projection axonométrique ---------- */
+function schCam(th, ph){
+  const t = th * Math.PI / 180, f = ph * Math.PI / 180;
+  const v = [Math.cos(f)*Math.sin(t), -Math.cos(f)*Math.cos(t), Math.sin(f)], r = [Math.cos(t), Math.sin(t), 0], u = [-Math.sin(f)*Math.sin(t), Math.sin(f)*Math.cos(t), Math.cos(f)];
+  const dot = (a, b) => a[0]*b[0] + a[1]*b[1] + a[2]*b[2];
+  return {v, pr:p => [dot(p, r), -dot(p, u)], depth:p => dot(p, v), dot};
+}
+function schFit(pts2, W, H, m){
+  const xs = pts2.map(p => p[0]), ys = pts2.map(p => p[1]);
+  const x0 = Math.min(...xs), x1 = Math.max(...xs), y0 = Math.min(...ys), y1 = Math.max(...ys);
+  const s = Math.min((W - m[1] - m[3]) / (x1 - x0 || 1), (H - m[0] - m[2]) / (y1 - y0 || 1));
+  const ox = m[3] + ((W - m[1] - m[3]) - (x1 - x0) * s) / 2 - x0 * s, oy = m[0] + ((H - m[0] - m[2]) - (y1 - y0) * s) / 2 - y0 * s;
+  return {s, f:p => [Math.round((ox + p[0]*s)*10)/10, Math.round((oy + p[1]*s)*10)/10]};
+}
+const schPts = a => a.map(p => p.join(",")).join(" ");
+function schNormal(a, b, c){ const u = [b[0]-a[0], b[1]-a[1], b[2]-a[2]], w = [c[0]-a[0], c[1]-a[1], c[2]-a[2]]; const n = [u[1]*w[2]-u[2]*w[1], u[2]*w[0]-u[0]*w[2], u[0]*w[1]-u[1]*w[0]]; const k = Math.hypot(...n) || 1; return n.map(x => x/k); }
+function schHull(p){
+  p = p.slice().sort((a, b) => a[0] - b[0] || a[1] - b[1]);
+  const cr = (o, a, b) => (a[0]-o[0])*(b[1]-o[1]) - (a[1]-o[1])*(b[0]-o[0]);
+  const lo = [], up = [];
+  p.forEach(q => { while(lo.length >= 2 && cr(lo[lo.length-2], lo[lo.length-1], q) <= 0) lo.pop(); lo.push(q); });
+  p.slice().reverse().forEach(q => { while(up.length >= 2 && cr(up[up.length-2], up[up.length-1], q) <= 0) up.pop(); up.push(q); });
+  return lo.slice(0, -1).concat(up.slice(0, -1));
+}
+function schCaption(W, H, n, title, sub){
+  return `<text x="40" y="${H-52}" font-family="Arial,Helvetica,sans-serif" font-size="27" font-weight="700" fill="#2B3035">${n} · ${schEsc(title)}</text><text x="40" y="${H-20}" font-family="Arial,Helvetica,sans-serif" font-size="17" fill="#4A5056">${schEsc(sub)}</text>`;
+}
+function schSub(P){
+  const t = P.toit === "2p" ? "2 pans " + schN(P.pente) + " % (" + schN(P.hA) + " → faîtage " + schN(P.hR) + " m)" : P.toit === "plat" ? "toit plat, H " + schN(P.hA) + " m" : "monopente " + schN(Math.round(P.pente*10)/10) + " % (" + schN(Math.min(P.hA,P.hB)) + " → " + schN(Math.max(P.hA,P.hB)) + " m)";
+  const A = P.auvent;
+  return schN(P.L) + " × " + schN(P.l) + " m · " + t + (A ? " · auvent " + (A.cote === "avant" ? "avant" : A.cote === "arriere" ? "arrière" : "sur " + SCH_COTES[A.cote]) + (A.poteaux ? "" : " autoporteur") + " " + schN(A.L) + " × " + schN(A.p) + " m" + (A.poteaux ? "" : ", sans poteau") : "") + " · RAL " + P.ral + (P.ralToit !== P.ral ? " / toiture RAL " + P.ralToit : "") + (P.finition ? " " + P.finition : "");
+}
+
+/* ---------- Vue 1 : isométrique habillée ---------- */
+function schIso(P, M){
+  const W = 1400, H = 1030, cam = schCam(52, 32), A = P.auvent, L = P.L, l = P.l;
+  const light = (() => { const v = [-0.45, -0.75, 0.62], k = Math.hypot(...v); return v.map(x => x/k); })();
+  const items = [];
+  const add = (pts3, draw, bias) => { const c = pts3.reduce((s, p) => [s[0]+p[0], s[1]+p[1], s[2]+p[2]], [0,0,0]).map(x => x / pts3.length); items.push({d:cam.depth(c) + (bias || 0), draw}); };
+  const all = [];
+  const margin = 3.2, gx0 = M.x0 - margin, gx1 = M.x1 + margin, gy0 = M.yMin - margin, gy1 = M.yMax + margin;
+  [[gx0,gy0,0],[gx1,gy0,0],[gx1,gy1,0],[gx0,gy1,0]].forEach(p => all.push(cam.pr(p)));
+  M.prof.forEach(q => [M.x0, M.x1].forEach(x => all.push(cam.pr([x, q[0], q[1] + 0.3]))));
+  const fit = schFit(all, W, H - 90, [30, 40, 30, 40]), T = p => fit.f(cam.pr(p));
+  const cW = schHex(P.col), cR = schHex(P.colToit);
+  const shade = n => 0.62 + 0.5 * Math.max(0, cam.dot(n, light));
+  let clipN = 0, defs = "";
+  const face = (pts3, col, ribs, extra) => {
+    const n = schNormal(pts3[0], pts3[1], pts3[2]);
+    if(cam.dot(n, cam.v) <= 0) return;
+    const k = shade(n), id = "c" + (++clipN), pp = pts3.map(T);
+    add(pts3, () => {
+      defs += `<clipPath id="${id}"><polygon points="${schPts(pp)}"/></clipPath>`;
+      let s = `<polygon points="${schPts(pp)}" fill="${schRgb(col, k)}" stroke="${schRgb(col, k*0.7)}" stroke-width="1.5" stroke-linejoin="round"/>`;
+      if(ribs && ribs.length) s += `<g clip-path="url(#${id})">` + ribs.map(r => { const a = T(r[0]), b = T(r[1]); return `<line x1="${a[0]}" y1="${a[1]}" x2="${b[0]}" y2="${b[1]}" stroke="${schRgb(col, k*0.72)}" stroke-width="1.6"/><line x1="${a[0]+1.4}" y1="${a[1]+0.8}" x2="${b[0]+1.4}" y2="${b[1]+0.8}" stroke="${schRgb(col, k*1.18)}" stroke-width="0.9"/>`; }).join("") + `</g>`;
+      if(extra) s += extra(T, k);
+      return s;
+    }, 0);
+  };
+  // murs : nervures du bardage
+  const wallRibs = (xa, ya, xb, yb, ztop) => {
+    const len = Math.hypot(xb-xa, yb-ya), r = [], st = 0.28;
+    if(P.bardage === "horizontal"){ for(let z = st; z < ztop + st; z += st) r.push([[xa - (xb-xa)*0.02, ya - (yb-ya)*0.02, z], [xb + (xb-xa)*0.02, yb + (yb-ya)*0.02, z]]); }
+    else { const k = Math.round(len / st); for(let i = 1; i < k; i++){ const t = i / k; r.push([[xa + (xb-xa)*t, ya + (yb-ya)*t, 0], [xa + (xb-xa)*t, ya + (yb-ya)*t, ztop + 1]]); } }
+    return r;
+  };
+  const openings = (cote) => (T2, k) => {
+    const list = []; P.ouv.filter(o => o.cote === cote).forEach(o => { for(let i = 0; i < o.q; i++) list.push(o); });
+    if(!list.length) return "";
+    const span = (cote === "avant" || cote === "arriere") ? L : l, step = span / (list.length + 1);
+    return list.map((o, i) => {
+      const c = step * (i + 1), w = Math.min(o.w, step * 0.9), z0 = o.type === "fenetre" ? 1.1 : 0, z1 = Math.min(z0 + o.h, (cote === "avant" ? P.hA : cote === "arriere" ? P.hB : Math.min(P.hA, P.hB)) - 0.15);
+      const pt = (s, z) => cote === "avant" ? [c + s, -0.02, z] : cote === "arriere" ? [L - c - s, l + 0.02, z] : cote === "gauche" ? [-0.02, l - c - s, z] : [L + 0.02, c + s, z];
+      const q = [pt(-w/2, z0), pt(w/2, z0), pt(w/2, z1), pt(-w/2, z1)].map(T2);
+      let s = `<polygon points="${schPts(q)}" fill="${o.type === "fenetre" ? "#9DB4C4" : "#7C858C"}" stroke="#1F2326" stroke-width="2"/>`;
+      if(o.type === "sect" || o.type === "rideau"){ const nb = Math.max(3, Math.round((z1 - z0) / (o.type === "sect" ? 0.55 : 0.12))); for(let j = 1; j < nb; j++){ const z = z0 + (z1 - z0) * j / nb, a = T2(pt(-w/2, z)), b = T2(pt(w/2, z)); s += `<line x1="${a[0]}" y1="${a[1]}" x2="${b[0]}" y2="${b[1]}" stroke="#5B6268" stroke-width="${o.type === "sect" ? 1.6 : 0.7}"/>`; } }
+      if(o.type === "fenetre"){ const a = T2(pt(0, z0)), b = T2(pt(0, z1)); s += `<line x1="${a[0]}" y1="${a[1]}" x2="${b[0]}" y2="${b[1]}" stroke="#1F2326" stroke-width="1.5"/>`; }
+      return s;
+    }).join("");
+  };
+  const postLines = (y) => (T2, k) => M.frames.slice(1, -1).map(x => { const a = T2([x, y, 0]), b = T2([x, y, M.zMain(y)]); return `<line x1="${a[0]}" y1="${a[1]}" x2="${b[0]}" y2="${b[1]}" stroke="${schRgb(cW, k*0.62)}" stroke-width="3"/>`; }).join("");
+  face([[0,0,0],[L,0,0],[L,0,P.hA],[0,0,P.hA]], cW, wallRibs(0,0,L,0,P.hA), (T2,k) => postLines(-0.03)(T2,k) + openings("avant")(T2,k));
+  face([[L,l,0],[0,l,0],[0,l,P.hB],[L,l,P.hB]], cW, wallRibs(L,l,0,l,P.hB), (T2,k) => postLines(l+0.03)(T2,k) + openings("arriere")(T2,k));
+  const gable = x => M.main.map(p => [x, p[0], p[1]]);
+  face([[L,0,0],[L,l,0]].concat(gable(L).reverse()), cW, wallRibs(L,0,L,l,M.zTop), openings("droite"));
+  face([[0,l,0],[0,0,0]].concat(gable(0)), cW, wallRibs(0,l,0,0,M.zTop), openings("gauche"));
+  // toiture : un pan par segment du profil
+  M.prof.slice(0, -1).forEach((a, i) => {
+    const b = M.prof[i+1], [xa, xb] = M.segX[i], up = b[1] >= a[1];
+    const q = [[xa,a[0],a[1]],[xb,a[0],a[1]],[xb,b[0],b[1]],[xa,b[0],b[1]]];
+    const n = schNormal(q[0], q[1], q[2]), qq = n[2] < 0 ? q.slice().reverse() : q;
+    const ribs = [], st = 0.33, k = Math.round((xb - xa) / st);
+    for(let j = 1; j < k; j++){ const x = xa + (xb - xa) * j / k; ribs.push([[x, a[0] - (b[0]-a[0])*0.05, a[1] - (b[1]-a[1])*0.05], [x, b[0] + (b[0]-a[0])*0.05, b[1] + (b[1]-a[1])*0.05]]); }
+    face(qq.map(p => [p[0], p[1], p[2] + 0.06]), cR, ribs, (T2, kk) => {
+      let s = "";
+      const main = !M.segX[i][2] && a[0] >= -1e-6 && b[0] <= l + 1e-6;
+      if(main && P.ecl > 0){
+        const nbE = P.ecl, segs = M.main.length - 1, per = Math.ceil(nbE / segs), idx = M.main.findIndex(p => Math.abs(p[0] - a[0]) < 1e-6);
+        const cnt = idx >= 0 ? Math.min(per, nbE - idx * per) : 0;
+        for(let e = 0; e < cnt; e++){ const xc = L * (e + 1) / (cnt + 1), w = Math.min(1.2, L / (cnt + 1) * 0.5), t0 = 0.12, t1 = 0.86;
+          const pt = (x, t) => [x, a[0] + (b[0]-a[0]) * t, a[1] + (b[1]-a[1]) * t + 0.08];
+          s += `<polygon points="${schPts([pt(xc-w/2,t0), pt(xc+w/2,t0), pt(xc+w/2,t1), pt(xc-w/2,t1)].map(T2))}" fill="rgba(205,218,228,.55)" stroke="rgba(230,238,244,.7)" stroke-width="1"/>`; }
+      }
+      return s;
+    });
+    // chant (rive) côté pignon droit pour l’épaisseur
+    const e1 = T([xb, a[0], a[1] + 0.06]), e2 = T([xb, b[0], b[1] + 0.06]), e3 = T([xb, b[0], b[1] - 0.12]), e4 = T([xb, a[0], a[1] - 0.12]);
+    add([[xb, (a[0]+b[0])/2, (a[1]+b[1])/2 + 0.3]], () => `<polygon points="${schPts([e1,e2,e3,e4])}" fill="${schRgb(cR, 0.45)}"/>`, 0);
+  });
+  // faîtière / closoir au sommet
+  M.prof.forEach((p, i) => { if(i > 0 && i < M.prof.length - 1 && p[1] >= M.prof[i-1][1] && p[1] >= M.prof[i+1][1]){ const a = T([M.x0, p[0], p[1] + 0.1]), b = T([M.x1, p[0], p[1] + 0.1]); add([[(M.x0+M.x1)/2, p[0], p[1] + 0.4]], () => `<line x1="${a[0]}" y1="${a[1]}" x2="${b[0]}" y2="${b[1]}" stroke="${schRgb(cR, 1.45)}" stroke-width="7" stroke-linecap="round"/>`, 0); } });
+  // auvent : fermes visibles sous la toiture, côté pignon droit
+  if(A && (A.cote === "avant" || A.cote === "arriere")){
+    const [xa, xb] = M.segX[A.cote === "arriere" ? M.prof.length - 2 : 0], ya = A.cote === "arriere" ? l : -A.p, yb = A.cote === "arriere" ? l + A.p : 0;
+    const nb = Math.max(2, Math.round(A.p / 0.8));
+    let s = "";
+    const bot = y => [xb, y, M.zBas(y)], top = y => [xb, y, M.zRoof(y) - 0.02];
+    for(let j = 0; j <= nb && P.structure === "treillis"; j++){ const y = ya + (yb - ya) * j / nb, p1 = T(bot(y)), p2 = T(top(y)); s += `<line x1="${p1[0]}" y1="${p1[1]}" x2="${p2[0]}" y2="${p2[1]}" stroke="#3A4045" stroke-width="2.5"/>`;
+      if(j < nb){ const y2 = ya + (yb - ya) * (j + 1) / nb, q1 = T(bot(y2)), q2 = T(top(y2)); s += `<line x1="${p1[0]}" y1="${p1[1]}" x2="${q2[0]}" y2="${q2[1]}" stroke="#3A4045" stroke-width="2"/><line x1="${p2[0]}" y1="${p2[1]}" x2="${q1[0]}" y2="${q1[1]}" stroke="#3A4045" stroke-width="2"/>`; } }
+    const b0 = T(bot(ya)), b1 = T(bot(yb)); s += `<line x1="${b0[0]}" y1="${b0[1]}" x2="${b1[0]}" y2="${b1[1]}" stroke="#2E3338" stroke-width="4"/>`;
+    if(A.poteaux) [xa, xb].forEach(x => { const p = T([x, A.cote === "arriere" ? yb - 0.2 : ya + 0.2, 0]), q = T([x, A.cote === "arriere" ? yb - 0.2 : ya + 0.2, M.zBas(A.cote === "arriere" ? yb - 0.2 : ya + 0.2)]); s += `<line x1="${p[0]}" y1="${p[1]}" x2="${q[0]}" y2="${q[1]}" stroke="#2E3338" stroke-width="4"/>`; });
+    add([[xb, (ya+yb)/2, M.zBas((ya+yb)/2)]], () => s, -0.5);
+  }
+  // gouttières et descentes
+  const gut = [];
+  if(M.prof[0][1] <= M.prof[1][1]) gut.push([M.prof[0], M.segX[0]]);
+  const nP = M.prof.length - 1; if(M.prof[nP][1] <= M.prof[nP-1][1]) gut.push([M.prof[nP], M.segX[nP-1]]);
+  gut.forEach(([p, sx], gi) => {
+    const a = T([sx[0], p[0], p[1] - 0.05]), b = T([sx[1], p[0], p[1] - 0.05]);
+    const yOut = p[0] < 0 ? -0.08 : p[0] > l ? l + 0.08 : p[0] + (p[0] < l/2 ? -0.08 : 0.08);
+    const front = p[0] < l/2;
+    add([[(sx[0]+sx[1])/2, yOut, p[1]]], () => `<line x1="${a[0]}" y1="${a[1]}" x2="${b[0]}" y2="${b[1]}" stroke="#2C3135" stroke-width="7" stroke-linecap="round"/><line x1="${a[0]}" y1="${a[1]-2}" x2="${b[0]}" y2="${b[1]-2}" stroke="#596168" stroke-width="2"/>`, front ? 1000 : 0.2);
+    const nb = gi === 0 ? Math.ceil(P.nbEP / gut.length) : Math.floor(P.nbEP / gut.length) || 1;
+    const onWall = p[0] >= -(P.deb + 1e-6) && p[0] <= l + P.deb + 1e-6;
+    if(!onWall) return;
+    for(let j = 0; j < nb; j++){
+      const x = nb === 1 ? sx[1] - 0.4 : sx[0] + 0.4 + (sx[1] - sx[0] - 0.8) * j / (nb - 1), yy = onWall ? (p[0] < l/2 ? -0.12 : l + 0.12) : p[0];
+      const t = T([x, yy, p[1] - 0.1]), bt = T([x, yy, onWall ? 0.25 : 0.25]), ft = T([x, yy + (p[0] < l/2 ? -0.35 : 0.35), 0.05]);
+      add([[x, yy + (p[0] < l/2 ? -0.5 : 0.5), 1]], () => `<polyline points="${t.join(",")} ${bt.join(",")} ${ft.join(",")}" fill="none" stroke="#3B4146" stroke-width="5" stroke-linejoin="round"/>`, front ? 1001 : 0.3);
+    }
+  });
+  items.sort((a, b) => a.d - b.d);
+  const body = items.map(it => it.draw()).join("");
+  // sol, dalle et ombre
+  const slab = [[gx0,gy0,0],[gx1,gy0,0],[gx1,gy1,0],[gx0,gy1,0]].map(T);
+  const ld = [0.55, 0.7, -0.65]; // direction du soleil vers le sol
+  const sh = [];
+  M.prof.slice(0, -1).forEach((a, i) => { const b = M.prof[i+1], [xa, xb] = M.segX[i]; [[xa,a],[xb,a],[xa,b],[xb,b]].forEach(([x, p]) => { const z = p[1], t = z / -ld[2]; sh.push([x + ld[0]*t, p[0] + ld[1]*t]); }); });
+  [[0,0],[L,0],[L,l],[0,l]].forEach(p => sh.push(p));
+  const shadow = schHull(sh).map(p => T([p[0], p[1], 0]));
+  const horizon = Math.min(...slab.map(p => p[1])) + 60;
+  const bg = `<defs><linearGradient id="sky" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#D0D5DC"/><stop offset="1" stop-color="#DDE1E4"/></linearGradient><filter id="blur" x="-20%" y="-20%" width="140%" height="140%"><feGaussianBlur stdDeviation="9"/></filter><pattern id="grav" width="6" height="6" patternUnits="userSpaceOnUse"><rect width="6" height="6" fill="#ABA290"/><circle cx="2" cy="2" r=".8" fill="#9E9583"/><circle cx="5" cy="4.5" r=".7" fill="#B6AE9D"/></pattern></defs>
+    <rect width="${W}" height="${H}" fill="url(#sky)"/><rect y="${horizon}" width="${W}" height="${H - horizon}" fill="#A8B48E"/><rect y="${horizon}" width="${W}" height="26" fill="#9AA585"/><rect y="${horizon+26}" width="${W}" height="38" fill="#B5AF8E"/>
+    <polygon points="${schPts(slab)}" fill="url(#grav)" opacity=".9"/><polygon points="${schPts(shadow)}" fill="rgba(40,35,30,.33)" filter="url(#blur)"/>`;
+  return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${W} ${H}" font-family="Arial,Helvetica,sans-serif">${bg}<defs>${defs}</defs>${body}<rect y="${H-95}" width="${W}" height="95" fill="#F4F4F2" opacity=".0"/>${schCaption(W, H, 1, "Vue isométrique — bâtiment habillé", schSub(P))}</svg>`.replace("<defs></defs>", "");
+}
+
+/* ---------- Vue 2 : écorché de l’ossature ---------- */
+function schEco(P, M){
+  const W = 1600, H = 1030, cam = schCam(52, 30), A = P.auvent, L = P.L, l = P.l;
+  const all = [];
+  [[M.x0,M.yMin,0],[M.x1,M.yMin,0],[M.x1,M.yMax,0],[M.x0,M.yMax,0],[M.x0,M.yMin,M.zTop],[M.x1,M.yMax,M.zTop],[M.x0,M.yMax,M.zTop],[M.x1,M.yMin,M.zTop]].forEach(p => all.push(cam.pr(p)));
+  const fit = schFit(all, W, H - 90, [40, 360, 40, 360]), T = p => fit.f(cam.pr(p));
+  const mem = []; // {a, b, w, c}
+  const seg = (a, b, w, kind) => mem.push({a, b, w, kind});
+  const tr = P.structure === "treillis";
+  // fermes / portiques
+  M.frames.forEach(x => {
+    const inA = !A || !["avant","arriere"].includes(A.cote) ? null : M.segX[A.cote === "arriere" ? M.prof.length - 2 : 0];
+    const withA = inA && x >= inA[0] - 1e-6 && x <= inA[1] + 1e-6;
+    const ys = M.prof.filter(p => (p[0] >= -1e-6 && p[0] <= l + 1e-6) || (withA && ((A.cote === "arriere" && p[0] > l) || (A.cote === "avant" && p[0] < 0)))).map(p => p[0]);
+    const y0 = Math.min(...ys), y1 = Math.max(...ys);
+    const ptsTop = M.prof.filter(p => p[0] >= y0 - 1e-6 && p[0] <= y1 + 1e-6);
+    ptsTop.slice(0, -1).forEach((p, i) => seg([x, p[0], p[1]], [x, ptsTop[i+1][0], ptsTop[i+1][1]], 7, "ferme"));
+    if(tr){
+      const nb = Math.max(4, Math.round((y1 - y0) / 0.9)), bys = Array.from({length:nb + 1}, (_, j) => y0 + (y1 - y0) * j / nb);
+      bys.slice(0, -1).forEach((y, j) => seg([x, y, M.zBas(y)], [x, bys[j+1], M.zBas(bys[j+1])], 7, "membrure"));
+      bys.forEach((y, j) => { const zb = M.zBas(y), zt = M.zRoof(y); if(zt - zb > 0.2) seg([x, y, zb], [x, y, zt], 3, "treillis");
+        if(j < nb){ const y2 = bys[j+1]; if(M.zRoof(y2) - M.zBas(y2) > 0.2 || zt - zb > 0.2){ seg([x, y, zb], [x, y2, M.zRoof(y2)], 2.5, "treillis"); seg([x, y, zt], [x, y2, M.zBas(y2)], 2.5, "treillis"); } } });
+    }
+    [0, l].forEach(y => seg([x, y, 0], [x, y, tr ? M.zRoof(y) : M.zRoof(y) - 0.1], 7, "poteau"));
+  });
+  // potelets de pignon
+  for(let k = 1; k <= P.potelets; k++){ const y = l * k / (P.potelets + 1); [0, L].forEach(x => seg([x, y, 0], [x, y, M.zMain(y)], 5, "potelet")); }
+  // pannes
+  M.pannes.forEach(p => { const [xa, xb] = M.segX[Math.min(p[2], M.segX.length - 1)]; seg([xa, p[0], p[1] + 0.05], [xb, p[0], p[1] + 0.05], 5, "panne"); });
+  // lisses des long pans et pignons
+  const lis = [];
+  for(let z = P.entLisses; z < Math.max(P.hA, P.hB) - 0.25; z += P.entLisses) lis.push(z);
+  lis.forEach(z => { if(z < P.hA - 0.2) seg([0, -0.02, z], [L, -0.02, z], 4.5, "lisse"); if(z < P.hB - 0.2) seg([0, l + 0.02, z], [L, l + 0.02, z], 4.5, "lisse");
+    [0, L].forEach(x => { const ys = []; for(let y = 0; y <= l + 1e-6; y += l / 40) ys.push(y); const inn = ys.filter(y => M.zMain(y) - 0.2 > z); if(inn.length > 1) seg([x, inn[0], z], [x, inn[inn.length-1], z], 4.5, "lisse"); }); });
+  // contreventement (croix de Saint-André) dans les travées d’extrémité
+  const xs = M.frames, ends = [[xs[0], xs[1]], [xs[xs.length-2], xs[xs.length-1]]];
+  ends.forEach(([xa, xb]) => {
+    [0, l].forEach(y => { const z = M.zMain(y) - 0.15; seg([xa, y, 0.1], [xb, y, z], 1.4, "croix"); seg([xa, y, z], [xb, y, 0.1], 1.4, "croix"); });
+    M.main.slice(0, -1).forEach((a, i) => { const b = M.main[i+1]; seg([xa, a[0], a[1]], [xb, b[0], b[1]], 1.4, "croix"); seg([xa, b[0], b[1]], [xb, a[0], a[1]], 1.4, "croix"); });
+  });
+  if(!tr) M.frames.forEach(x => [0, l].forEach(y => { const z = M.zRoof(y); const dy = y === 0 ? 0.9 : -0.9; seg([x, y, z - 0.75], [x, y + dy, M.zRoof(y + dy) - 0.05], 4, "jarret"); }));
+  // dessin
+  const grid = (() => { let s = ""; for(let x = 0; x < W; x += 34) s += `<line x1="${x}" y1="0" x2="${x}" y2="${H}" stroke="#E4E6E3" stroke-width="1"/>`; for(let y = 0; y < H; y += 34) s += `<line x1="0" y1="${y}" x2="${W}" y2="${y}" stroke="#E4E6E3" stroke-width="1"/>`; return s; })();
+  const slab = [[M.x0-1.5,M.yMin-1.5,0],[M.x1+1.5,M.yMin-1.5,0],[M.x1+1.5,M.yMax+1.5,0],[M.x0-1.5,M.yMax+1.5,0]].map(T);
+  let s = `<rect width="${W}" height="${H}" fill="#F4F4F2"/>${grid}<polygon points="${schPts(slab)}" fill="#D9D5CA" stroke="#C3BEB1"/>`;
+  // plots et platines
+  M.frames.forEach(x => [0, l].forEach(y => { const q = [[x-0.45,y-0.45,0],[x+0.45,y-0.45,0],[x+0.45,y+0.45,0],[x-0.45,y+0.45,0]].map(T), q2 = [[x-0.16,y-0.16,0.01],[x+0.16,y-0.16,0.01],[x+0.16,y+0.16,0.01],[x-0.16,y+0.16,0.01]].map(T); s += `<polygon points="${schPts(q)}" fill="#BDB8AC" stroke="#A39E92"/><polygon points="${schPts(q2)}" fill="#E8E8E6" stroke="#2E3338" stroke-width="1.2"/>`; }));
+  // bardage et couverture en transparence
+  const glass = q => `<polygon points="${schPts(q.map(T))}" fill="rgba(196,212,222,.18)" stroke="rgba(110,135,155,.45)" stroke-width="1"/>`;
+  s += glass([[0,0,0],[L,0,0],[L,0,P.hA],[0,0,P.hA]]) + glass([[0,l,0],[L,l,0],[L,l,P.hB],[0,l,P.hB]]);
+  [0, L].forEach(x => { s += glass([[x,0,0],[x,l,0]].concat(M.main.map(p => [x, p[0], p[1]]).reverse())); });
+  M.prof.slice(0, -1).forEach((a, i) => { const b = M.prof[i+1], [xa, xb] = M.segX[i]; s += glass([[xa,a[0],a[1]+0.1],[xb,a[0],a[1]+0.1],[xb,b[0],b[1]+0.1],[xa,b[0],b[1]+0.1]]); });
+  if(P.ecl > 0) M.main.slice(0, -1).forEach((a, i) => { const b = M.main[i+1], per = Math.ceil(P.ecl / (M.main.length - 1)), cnt = Math.min(per, P.ecl - i * per);
+    for(let e = 0; e < cnt; e++){ const xc = L * (e+1) / (cnt+1), w = Math.min(1.2, L / (cnt+1) * 0.5), pt = (x, t) => [x, a[0] + (b[0]-a[0])*t, 0]; s += `<polygon points="${schPts([pt(xc-w/2,.12),pt(xc+w/2,.12),pt(xc+w/2,.86),pt(xc-w/2,.86)].map(T))}" fill="rgba(255,255,255,.45)" stroke="rgba(110,135,155,.5)"/>`; } });
+  mem.forEach(m => { m.d = cam.depth([(m.a[0]+m.b[0])/2, (m.a[1]+m.b[1])/2, (m.a[2]+m.b[2])/2]); });
+  mem.sort((a, b) => a.d - b.d);
+  mem.forEach(m => { const a = T(m.a), b = T(m.b);
+    if(m.kind === "croix") s += `<line x1="${a[0]}" y1="${a[1]}" x2="${b[0]}" y2="${b[1]}" stroke="#A84B3A" stroke-width="1.6" opacity=".85"/>`;
+    else s += `<line x1="${a[0]}" y1="${a[1]}" x2="${b[0]}" y2="${b[1]}" stroke="#2A2F33" stroke-width="${m.w}" stroke-linecap="round"/><line x1="${a[0]}" y1="${a[1]}" x2="${b[0]}" y2="${b[1]}" stroke="#66717B" stroke-width="${Math.max(1, m.w * 0.32)}" stroke-linecap="round"/>`; });
+  // nœuds
+  M.frames.forEach(x => [0, l].forEach(y => { const p = T([x, y, M.zRoof(y) - (tr ? 0 : 0.1)]); s += `<circle cx="${p[0]}" cy="${p[1]}" r="3.2" fill="#F4F4F2" stroke="#2A2F33" stroke-width="1.2"/>`; }));
+  // étiquettes
+  const xm = M.frames[Math.floor((M.frames.length - 1) / 2)], xq = M.frames[Math.min(1, M.frames.length - 1)];
+  const lab = [];
+  const pn = M.pannes.filter(p => p[0] >= 0 && p[0] <= l); const pm = pn[Math.floor(pn.length * 0.75)] || M.pannes[0];
+  lab.push({p:T([L*0.18, pm[0], pm[1]]), t:"Pannes tous les " + schM(P.entPannes), s:P.pannesSec});
+  const ym = P.toit === "2p" ? l * 0.3 : l * 0.62;
+  lab.push({p:T([xq, ym, M.zRoof(ym)]), t:(tr ? "Ferme treillis" : "Portique") + " ×" + P.n + (tr && A && ["avant","arriere"].includes(A.cote) ? " — continue " + schM(l + A.p) : ""), s:tr ? "membrure haute suit la toiture" + (P.treillisSec ? " · treillis " + P.treillisSec : "") + (P.membrure ? " · membrures " + P.membrure : "") : (P.membrure ? "traverse " + P.membrure : "traverse avec jarrets")});
+  if(tr) lab.push({p:T([xm, l*0.55, P.hp]), t:"Membrure basse horizontale", s:"sous-face à " + schM(P.hp) + " = passage libre"});
+  if(A){ const ya = A.cote === "arriere" ? l + A.p*0.6 : A.cote === "avant" ? -A.p*0.6 : l/2, xa = A.cote === "gauche" ? -A.p*0.6 : A.cote === "droite" ? L + A.p*0.6 : M.x1; lab.push({p:T([xa, ya, M.zRoof(ya) - 0.15]), t:"Auvent " + (A.poteaux ? "" : "autoporteur ") + schN(A.L) + " × " + schN(A.p) + " m", s:A.poteaux ? "sur poteaux" : "porte-à-faux, aucun poteau"}); }
+  lab.push({p:T([(xs[0]+xs[1])/2, 0, P.hA*0.55]), t:"Croix de Saint-André", s:"travées d’extrémité + toiture"});
+  lab.push({p:T([xs[xs.length-1], 0, P.hA*0.35]), t:"Poteau" + (P.poteau ? " " + P.poteau : "") + " ×" + (P.n * 2 + 2 * P.potelets), s:"boulonné sous la " + (tr ? "ferme" : "traverse")});
+  if(lis.length) lab.push({p:T([L*0.45, 0, lis[0]]), t:"Lisses tous les " + schM(P.entLisses), s:P.lissesSec});
+  lab.push({p:T([xs[xs.length-1], 0, 0]), t:"Platine + 4 tiges d’ancrage", s:"sur plot béton"});
+  const cx = W / 2 - 20, left = lab.filter(x => x.p[0] < cx).sort((a, b) => a.p[1] - b.p[1]), right = lab.filter(x => x.p[0] >= cx).sort((a, b) => a.p[1] - b.p[1]);
+  const place = (arr) => { let y = 60; arr.forEach(x => { x.y = Math.max(y, Math.min(H - 140, x.p[1])); y = x.y + 72; }); for(let i = arr.length - 1; i >= 0; i--){ const lim = i === arr.length - 1 ? H - 130 : arr[i+1].y - 72; if(arr[i].y > lim) arr[i].y = lim; } };
+  place(left); place(right);
+  const tx = (x, y, t, a, sz, w, col) => `<text x="${x}" y="${y}" text-anchor="${a}" font-size="${sz}" font-weight="${w}" fill="${col}">${schEsc(t)}</text>`;
+  left.forEach(x => { const lx = 335; s += `<polyline points="${lx+10},${x.y-6} ${lx+22},${x.y-6} ${x.p[0]},${x.p[1]}" fill="none" stroke="#1F6FB2" stroke-width="1.5"/><circle cx="${x.p[0]}" cy="${x.p[1]}" r="4.5" fill="#1F6FB2"/>` + tx(lx, x.y, x.t, "end", 19, 700, "#23282C") + (x.s ? tx(lx, x.y + 22, x.s, "end", 15, 400, "#3A4045") : ""); });
+  right.forEach(x => { const lx = W - 340; s += `<polyline points="${lx-10},${x.y-6} ${lx-22},${x.y-6} ${x.p[0]},${x.p[1]}" fill="none" stroke="#1F6FB2" stroke-width="1.5"/><circle cx="${x.p[0]}" cy="${x.p[1]}" r="4.5" fill="#1F6FB2"/>` + tx(lx, x.y, x.t, "start", 19, 700, "#23282C") + (x.s ? tx(lx, x.y + 22, x.s, "start", 15, 400, "#3A4045") : ""); });
+  const trav = P.n - 1;
+  return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${W} ${H}" font-family="Arial,Helvetica,sans-serif">${s}${schCaption(W, H, 2, "Écorché technique — ossature", trav + " travée" + (trav > 1 ? "s" : "") + " de " + schN(L / trav) + " m · " + P.n + " " + (tr ? "fermes treillis" : "portiques") + (A && ["avant","arriere"].includes(A.cote) ? " continu" + (tr ? "es" : "s") + " bâtiment + auvent" : "") + " · bardage et couverture représentés en transparence")}</svg>`;
+}
+
+/* ---------- Vue 3 : vue en bout, coupe sur une ferme ---------- */
+function schBout(P, M){
+  const W = 1400, H = 900, A = P.auvent, l = P.l, tr = P.structure === "treillis";
+  const y0 = Math.min(M.yMin, 0), y1 = Math.max(M.yMax, l), zt = M.zTop;
+  const mL = 240, mR = 200, top = 130, gy = H - 300;
+  const s0 = Math.min((W - mL - mR) / (y1 - y0), (gy - top) / zt);
+  const X = y => Math.round((mL + (W - mL - mR - (y1 - y0) * s0) / 2 + (y - y0) * s0) * 10) / 10, Z = z => Math.round((gy - z * s0) * 10) / 10;
+  let s = `<rect width="${W}" height="${H}" fill="#F4F4F2"/><defs><pattern id="hatch" width="9" height="9" patternUnits="userSpaceOnUse" patternTransform="rotate(45)"><line x1="0" y1="0" x2="0" y2="9" stroke="#8C8576" stroke-width="1"/></pattern><marker id="sa" viewBox="0 0 10 10" refX="5" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 1.5L10 5L0 8.5z" fill="#23282C"/></marker></defs>`;
+  s += `<rect x="${X(y0) - 120}" y="${gy}" width="${X(y1) - X(y0) + 240}" height="70" fill="#E2DDD2"/><line x1="${X(y0) - 120}" y1="${gy}" x2="${X(y1) + 120}" y2="${gy}" stroke="#6E6658" stroke-width="2"/>`;
+  // pignon (remplissage)
+  s += `<polygon points="${X(0)},${Z(0)} ${M.main.map(p => X(p[0]) + "," + Z(p[1])).join(" ")} ${X(l)},${Z(0)}" fill="#E8EBEC"/>`;
+  const pignonTxt = `<text x="${X(l*0.5)}" y="${Z(0.35)}" stroke="#E8EBEC" stroke-width="6" paint-order="stroke" text-anchor="middle" font-size="19" fill="#5A7A90">pignon ${P.toit === "2p" ? "à 2 pans" : P.toit === "plat" ? "rectangulaire" : "en trapèze rectangle"} (bardage ${P.bardage})</text>`;
+  // plots béton
+  [0, l].forEach(y => { s += `<rect x="${X(y) - 0.33*s0}" y="${gy}" width="${0.66*s0}" height="${0.55*s0}" fill="#E2DDD2"/><rect x="${X(y) - 0.33*s0}" y="${gy}" width="${0.66*s0}" height="${0.55*s0}" fill="url(#hatch)" stroke="#6E6658"/><line x1="${X(y)-6}" y1="${gy}" x2="${X(y)-6}" y2="${gy + 0.4*s0}" stroke="#555" stroke-dasharray="4 3"/><line x1="${X(y)+6}" y1="${gy}" x2="${X(y)+6}" y2="${gy + 0.4*s0}" stroke="#555" stroke-dasharray="4 3"/>`; });
+  // ferme : membrure haute, membrure basse, treillis
+  const ys = []; const ya = (A && A.cote === "avant") ? -A.p : 0, yb = (A && A.cote === "arriere") ? l + A.p : l;
+  const nb = Math.max(4, Math.round((yb - ya) / 0.95)); for(let j = 0; j <= nb; j++) ys.push(ya + (yb - ya) * j / nb);
+  const tp = M.prof.filter(p => p[0] >= ya - 1e-6 && p[0] <= yb + 1e-6);
+  const col = "#363B3F", wch = Math.max(6, 0.12 * s0);
+  if(tr){
+    s += `<polyline points="${ys.map(y => X(y) + "," + Z(M.zBas(y))).join(" ")}" fill="none" stroke="${col}" stroke-width="${wch}"/>`;
+    ys.forEach((y, j) => { const zb = M.zBas(y), ztp = M.zRoof(y); if(ztp - zb > 0.22) s += `<line x1="${X(y)}" y1="${Z(zb)}" x2="${X(y)}" y2="${Z(ztp)}" stroke="#5A6168" stroke-width="3.5"/>`;
+      if(j < nb){ const y2 = ys[j+1], d1 = ztp - zb, d2 = M.zRoof(y2) - M.zBas(y2); if(d1 > 0.22 || d2 > 0.22){ s += `<line x1="${X(y)}" y1="${Z(zb)}" x2="${X(y2)}" y2="${Z(M.zRoof(y2))}" stroke="#5A6168" stroke-width="3"/>`; if(d1 > 0.22 && d2 > 0.22) s += `<line x1="${X(y)}" y1="${Z(ztp)}" x2="${X(y2)}" y2="${Z(M.zBas(y2))}" stroke="#5A6168" stroke-width="3"/>`; else { const yy = d1 > d2 ? y : y2; s += `<polygon points="${X(y)},${Z(M.zBas(y))} ${X(y2)},${Z(M.zBas(y2))} ${X(y2)},${Z(M.zRoof(y2))} ${X(y)},${Z(M.zRoof(y))}" fill="${col}" opacity="${yy === y ? 1 : 1}"/>`; } } } });
+  } else {
+    // portique : traverse pleine avec jarrets
+    s += `<polyline points="${tp.map(p => X(p[0]) + "," + Z(p[1] - 0.16)).join(" ")}" fill="none" stroke="${col}" stroke-width="${Math.max(10, 0.3 * s0)}" stroke-linejoin="round"/>`;
+    [0, l].forEach(y => { const dy = y === 0 ? 0.9 : -0.9; s += `<polygon points="${X(y)},${Z(M.zRoof(y) - 0.3)} ${X(y + dy)},${Z(M.zRoof(y + dy) - 0.3)} ${X(y)},${Z(M.zRoof(y) - 0.85)}" fill="${col}"/>`; });
+  }
+  s += `<polyline points="${tp.map(p => X(p[0]) + "," + Z(p[1])).join(" ")}" fill="none" stroke="${col}" stroke-width="${wch}" stroke-linejoin="round"/>`;
+  // poteaux
+  if(A && A.poteaux && (A.cote === "avant" || A.cote === "arriere")){ const y = A.cote === "avant" ? -A.p + 0.2 : l + A.p - 0.2; s += `<rect x="${X(y) - 0.05*s0}" y="${Z(M.zBas(y))}" width="${0.1*s0}" height="${Z(0) - Z(M.zBas(y))}" fill="${col}"/>`; }
+  [0, l].forEach(y => { s += `<rect x="${X(y) - 0.075*s0}" y="${Z(M.zRoof(y))}" width="${0.15*s0}" height="${Z(0) - Z(M.zRoof(y))}" fill="${col}"/><rect x="${X(y) - 0.13*s0}" y="${gy - 4}" width="${0.26*s0}" height="4" fill="#23282C"/>`; });
+  [0, l].forEach(y => { [M.zRoof(y) - (tr ? 0 : 0.15), (tr ? P.hp : M.zRoof(y) - 0.6)].forEach(z => { s += `<circle cx="${X(y)}" cy="${Z(z)}" r="4.5" fill="#F4F4F2" stroke="#23282C" stroke-width="1.4"/>`; }); });
+  // potelet de pignon
+  for(let k = 1; k <= P.potelets; k++){ const y = l * k / (P.potelets + 1); s += `<line x1="${X(y)}" y1="${Z(0)}" x2="${X(y)}" y2="${Z(tr ? P.hp : M.zMain(y) - 0.3)}" stroke="#7F878E" stroke-width="5" stroke-dasharray="10 5"/>`; }
+  // pannes, tôle, lisses
+  const pz = 0.07*s0;
+  M.pannes.forEach(p => { s += `<rect x="${X(p[0]) - pz/2}" y="${Z(p[1]) - pz - 2}" width="${pz}" height="${pz}" fill="#4A5157" stroke="#23282C"/>`; });
+  s += `<polyline points="${M.prof.map(p => X(p[0]) + "," + (Z(p[1]) - pz - 4)).join(" ")}" fill="none" stroke="#2A2F33" stroke-width="3.5" stroke-linejoin="round"/>`;
+  for(let z = P.entLisses; z < Math.max(P.hA, P.hB) - 0.25; z += P.entLisses){ if(z < P.hA - 0.2) s += `<rect x="${X(0) - 0.075*s0 - pz}" y="${Z(z) - pz/2}" width="${pz}" height="${pz}" fill="#4A5157" stroke="#23282C"/>`; if(z < P.hB - 0.2) s += `<rect x="${X(l) + 0.075*s0}" y="${Z(z) - pz/2}" width="${pz}" height="${pz}" fill="#4A5157" stroke="#23282C"/>`; }
+  // faîtière
+  M.prof.forEach((p, i) => { if(i > 0 && i < M.prof.length - 1 && p[1] >= M.prof[i-1][1] && p[1] >= M.prof[i+1][1]){ const x = X(p[0]), y = Z(p[1]) - pz - 8; s += `<polyline points="${x - 34},${y + 12} ${x},${y - 4} ${x + 34},${y + 12}" fill="none" stroke="#7E868C" stroke-width="5"/>`; } });
+  // gouttières et descente
+  const gs = []; if(M.prof[0][1] <= M.prof[1][1]) gs.push(M.prof[0]); const nP = M.prof.length - 1; if(M.prof[nP][1] <= M.prof[nP-1][1]) gs.push(M.prof[nP]);
+  gs.forEach(p => { const x = X(p[0]) + (p[0] < l/2 ? -12 : 12), y = Z(p[1]) - pz; s += `<path d="M${x-13} ${y} L${x-13} ${y+14} Q${x} ${y+26} ${x+13} ${y+14} L${x+13} ${y} Z" fill="#4E565C" stroke="#23282C"/>`;
+    if(p[0] >= -1e-6 && p[0] <= l + 1e-6) s += `<line x1="${x}" y1="${y + 20}" x2="${x}" y2="${gy - 8}" stroke="#4E565C" stroke-width="7"/>`; });
+  s += pignonTxt;
+  // cotes
+  const tx = (x, y, t, a, sz, w, c) => `<text x="${x}" y="${y}" text-anchor="${a || "middle"}" font-size="${sz || 24}" font-weight="${w || 700}" fill="${c || "#23282C"}" stroke="#F0F1EF" stroke-width="6" stroke-linejoin="round" paint-order="stroke">${schEsc(t)}</text>`;
+  const cv = (x, z0, z1, t, side) => `<line x1="${x}" y1="${Z(z0)}" x2="${x}" y2="${Z(z1)}" stroke="#23282C" stroke-width="1.4" marker-start="url(#sa)" marker-end="url(#sa)"/><line x1="${x-12}" y1="${Z(z1)}" x2="${x+12}" y2="${Z(z1)}" stroke="#23282C" stroke-width="1.2"/>` + tx(side === "l" ? x - 14 : x + 14, (Z(z0) + Z(z1)) / 2 + 8, t, side === "l" ? "end" : "start");
+  const ch = (ya, yb, yy, t) => `<line x1="${X(ya)}" y1="${yy}" x2="${X(yb)}" y2="${yy}" stroke="#23282C" stroke-width="1.4" marker-start="url(#sa)" marker-end="url(#sa)"/><line x1="${X(ya)}" y1="${yy-14}" x2="${X(ya)}" y2="${yy+14}" stroke="#23282C"/><line x1="${X(yb)}" y1="${yy-14}" x2="${X(yb)}" y2="${yy+14}" stroke="#23282C"/>` + tx((X(ya) + X(yb)) / 2, yy - 10, t);
+  const yFirst = M.prof[0][0], yLast = M.prof[M.prof.length-1][0];
+  s += cv(A && A.cote === "avant" ? X(0) - 0.075*s0 - 40 : X(Math.min(0, yFirst)) - 70, 0, M.zRoof(0), schM(M.zRoof(0)), "l");
+  if(Math.abs(P.hB - P.hA) > 0.01) s += cv(X(l) - 0.075*s0 - (P.structure === "treillis" ? 130 : 40), 0, M.zRoof(l), schM(M.zRoof(l)), "l");
+  if(P.toit === "2p") s += `<line x1="${X(l/2)}" y1="${Z(0)}" x2="${X(l/2)}" y2="${Z(P.hR)}" stroke="#9AA1A6" stroke-dasharray="6 4"/>` + tx(X(l/2), Z(P.hR) - pz - 30, "faîtage " + schM(P.hR), "middle", 20);
+  if(A && A.cote === "arriere") s += cv(X(yLast) + 60, 0, M.zRoof(yLast), schM(M.zRoof(yLast)), "r");
+  if(A && A.cote === "avant") s += cv(X(yFirst) - 70, 0, M.zRoof(yFirst), schM(M.zRoof(yFirst)), "l");
+  if(tr) s += cv(X(l * 0.45), 0, P.hp, "passage libre " + schM(P.hp), "r");
+  else s += cv(X(l * 0.45), 0, Math.min(P.hA, P.hB) - 0.3, "sous traverse ≈ " + schM(Math.min(P.hA, P.hB) - 0.3), "r");
+  if(tr){ const hh = (y, a) => tx(X(y) + (a === "end" ? -10 : 10), Z(P.hp) + 34, "h " + schM(Math.max(0, M.zRoof(y) - P.hp)).replace(" m", " m"), a, 17, 700, "#1F6FB2");
+    s += hh(Math.max(0, ya) === 0 && ya === 0 ? 0.0 : 0, "start"); s += hh(l, "end"); if(A && A.cote === "arriere") s += hh(yb, "end"); if(A && A.cote === "avant") s += hh(ya, "start"); }
+  const yd1 = gy + 0.55*s0 + 50; s += ch(0, l, yd1, schM(l));
+  if(A && A.cote === "arriere") s += ch(l, l + A.p, yd1, schM(A.p));
+  if(A && A.cote === "avant") s += ch(-A.p, 0, yd1, schM(A.p));
+  if(A && ["avant","arriere"].includes(A.cote)) s += ch(Math.min(0, -A.p * (A.cote === "avant")), A.cote === "arriere" ? l + A.p : l, yd1 + 62, schM(l + A.p) + " hors tout");
+  // pentes
+  const pentes = []; M.prof.slice(0, -1).forEach((a, i) => { const b = M.prof[i+1]; if(Math.abs(b[1]-a[1]) < 1e-6) return; const len = b[0] - a[0]; if(len < 0.6) return; pentes.push([a, b]); });
+  pentes.forEach(([a, b], k) => { const up = b[1] > a[1], mx = (a[0] + b[0]) / 2, mz = (a[1] + b[1]) / 2, ang = Math.atan2(Z(b[1]) - Z(a[1]), X(b[0]) - X(a[0])) * 180 / Math.PI, pc = Math.round(Math.abs(b[1]-a[1]) / (b[0]-a[0]) * 1000) / 10;
+    s += `<text transform="translate(${X(mx)},${Z(mz) - pz - 34}) rotate(${Math.round(ang*10)/10})" text-anchor="middle" font-size="24" font-weight="700" fill="#C0392B">${up ? "pente " + schN(pc) + " % ⟶" : "⟵ " + schN(pc) + " %"}</text>`; });
+  if(A){ const yy = A.cote === "arriere" ? l + A.p/2 : A.cote === "avant" ? -A.p/2 : null; if(yy !== null) s += `<text x="${X(yy)}" y="${Z(P.hp || M.zRoof(yy)) + 80}" text-anchor="middle" font-size="18" fill="#23282C"><tspan x="${X(yy)}">auvent ${A.poteaux ? "sur poteaux" : "autoporteur"}</tspan><tspan x="${X(yy)}" dy="22">${A.poteaux ? "" : "porte-à-faux "}${schM(A.p)}</tspan>${A.poteaux ? "" : `<tspan x="${X(yy)}" dy="22">aucun poteau</tspan>`}</text>`; }
+  const lbl = (y, t, a) => tx(X(y) + (a === "end" ? 10 : -10), top - 30, t, a === "end" ? "start" : "end", 19, 400);
+  if(Math.abs(P.hA - P.hB) > 0.01){ s += tx(X(0), Z(M.zRoof(0)) - 120, P.hA < P.hB ? "long pan bas" : "long pan haut", "middle", 19, 400); s += tx(X(l), Z(M.zRoof(l)) - 80, (P.hA < P.hB ? "long pan haut" : "long pan bas") + (A && A.cote === "arriere" && P.hB > P.hA ? " = faîtage" : ""), "middle", 19, 400); }
+  return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${W} ${H}" font-family="Arial,Helvetica,sans-serif">${s}${schCaption(W, H, 3, "Vue en bout orthogonale — coupe sur " + (tr ? "ferme" : "portique") + (A && ["avant","arriere"].includes(A.cote) ? " continu" + (tr ? "e" : "") : ""), (P.toit === "2p" ? "2 pans " + schN(P.pente) + " %" : P.toit === "plat" ? "toit plat" : "pente " + schN(Math.round(P.pente*10)/10) + " % sur " + schN(l) + " m") + (A && ["avant","arriere"].includes(A.cote) ? ", auvent " + schN(A.pente) + " % sur " + schN(A.p) + " m" : "") + (tr ? " · membrure basse horizontale à " + schN(P.hp) + " m sous-face · treillis en croix type Eiffel" : " · portiques à traverses pleines") + " · ■ = pannes et lisses")}</svg>`;
+}
+
+let SCH_N = 0;
+function schUniq(svg){ const k = "s" + (++SCH_N) + "_"; return svg.replace(/id="([^"]+)"/g, 'id="' + k + '$1"').replace(/url\(#([^)]+)\)/g, "url(#" + k + "$1)"); }
+const SCH_CACHE = new Map();
+function schAll(p){
+  const key = JSON.stringify(p || {}); if(SCH_CACHE.has(key)) return SCH_CACHE.get(key);
+  const res = schAll0(p); SCH_CACHE.set(key, res); if(SCH_CACHE.size > 12) SCH_CACHE.delete(SCH_CACHE.keys().next().value); return res;
+}
+function schAll0(p){
+  const P = schNorm(p); if(P.err) return P;
+  const M = schModel(P);
+  return {P, iso:schUniq(schIso(P, M)), eco:schUniq(schEco(P, M)), bout:schUniq(schBout(P, M))};
+}
+/* SVG → PNG (data URL) pour le Drive, le chat et le partage. */
+function schPng(svg, w){
+  return new Promise((res, rej) => {
+    const img = new Image(), vb = (svg.match(/viewBox="0 0 ([\d.]+) ([\d.]+)"/) || [0, 1400, 1000]);
+    const W = w || 1600, H = Math.round(W * vb[2] / vb[1]);
+    img.onload = () => { const c = document.createElement("canvas"); c.width = W; c.height = H; const g = c.getContext("2d"); g.fillStyle = "#fff"; g.fillRect(0, 0, W, H); g.drawImage(img, 0, 0, W, H); res(c.toDataURL("image/png")); };
+    img.onerror = () => rej(new Error("dessin impossible"));
+    img.src = "data:image/svg+xml;charset=utf-8," + encodeURIComponent(svg);
+  });
+}
+
+/* ---------- Schémas : lien avec les ouvrages du devis ---------- */
+const SCH_VUES = [["iso","Vue habillée"],["eco","Écorché ossature"],["bout","Vue en bout cotée"]];
+/* Paramètres du schéma tirés de l’ouvrage, puis réglages propres au schéma (o.sch) par-dessus. */
+function schFromOuv(o){
+  const d = o.d, Q = quantities(o), ref = k => { const x = (o.sec.ossature || []).find(y => y.tpl === k && !y.off); return x && has(x.ref) ? String(x.ref).trim() : ""; };
+  const P = {titre:o.name, L:d.L, l:d.l, toit:d.toit, H:d.H, hA:d.Hav, hB:d.Har, pente:d.pente, deb:d.deb, n:Q.nbPortiques, entPort:d.entPort, entPannes:d.entPannes, entLisses:d.entLisses, potelets:d.potelets, nbEP:d.nbEP,
+    ouv:(o.ouv || []).map(x => ({type:x.type, w:x.w, h:x.h, q:x.q, cote:x.cote || "avant"})), poteau:ref("Poteaux"), membrure:ref("Traverses / arbalétriers"), pannesSec:ref("Pannes"), lissesSec:ref("Lisses de bardage")};
+  const h = (o.hauvents || [])[0];
+  if(h && num(h.l) > 0) P.auvent = {cote:h.cote || "arriere", p:h.l, pente:h.pente, L:h.L, poteaux:false};
+  const tr = activeLines(o).lines.find(x => /translucide|éclairant|eclairant/i.test(lineLabel(x.L)) && x.c.qty > 0);
+  if(tr){ const ramp = num(d.l) * (d.toit === "2p" ? 0.5 : 1) * 1.01; P.ecl = Math.max(1, Math.round(tr.c.qty / Math.max(1, 1.1 * ramp * 0.75))); }
+  const s = o.sch || {};
+  Object.keys(s).forEach(k => { if(k === "auvent"){ P.auvent = s.auvent ? Object.assign({}, P.auvent || {}, s.auvent) : null; } else if(has(s[k])) P[k] = s[k]; });
+  return P;
+}
+function schTitre(P, o){ return (o ? o.name : P.titre || "Bâtiment"); }
+/* Fenêtre des schémas : trois vues, réglages, enregistrement. ctx = {dv, o} (ouvrage) ou {P, client} (chat sans ouvrage). */
+function schOpen(ctx){
+  const o = ctx.o, dv = ctx.dv;
+  let free = o ? null : Object.assign({}, ctx.P || {});
+  const getP = () => o ? schFromOuv(o) : free;
+  let vue = ctx.vue || "iso";
+  const box = el(`<div class="schbox"><div class="row schtabs">${SCH_VUES.map(([k,t]) => `<button type="button" class="btn sm" data-v="${k}">${t}</button>`).join("")}</div>
+    <div class="schema schview"></div>
+    <details class="schreg"><summary>Réglages du schéma</summary><div class="grid" data-f></div>${o ? `<p class="muted small" style="margin:6px 0 0">Les dimensions, hauteurs, entraxes, hauvents et ouvertures viennent de l’ouvrage du devis. Ici, seulement ce qui sert au dessin.</p>` : ""}</details>
+    ${o ? `<label class="row small" style="gap:8px"><input type="checkbox" data-sd ${o.schemaDevis ? "checked" : ""} style="width:auto"> Mettre ces schémas sur le devis imprimé</label>` : ""}
+    <p class="muted small" style="margin:0">Schémas de principe générés à partir des données : ils ne remplacent pas les plans d’exécution ni la note de calcul.</p></div>`);
+  const view = $(".schview", box), form = $("[data-f]", box);
+  const draw = () => {
+    const r = schAll(getP());
+    $$("[data-v]", box).forEach(b => b.classList.toggle("primary", b.dataset.v === vue));
+    view.innerHTML = r.err ? `<p class="warn" style="margin:10px 0">${esc(r.err)}</p>` : r[vue];
+    return r;
+  };
+  const F = [
+    ["structure","Structure","sel",[["portique","Portiques (traverses pleines)"],["treillis","Fermes treillis"]]],
+    ["hp","Passage libre sous ferme (m)","num"],
+    ["auvent.cote","Auvent : côté","sel",[["","Pas d’auvent"],["arriere","Long pan arrière"],["avant","Long pan avant"],["gauche","Pignon gauche"],["droite","Pignon droit"]]],
+    ["auvent.p","Auvent : avancée (m)","num"],["auvent.pente","Auvent : pente (%)","num"],["auvent.L","Auvent : longueur (m)","num"],
+    ["auvent.poteaux","Auvent : poteaux","sel",[["","Autoporteur, sans poteau"],["1","Sur poteaux"]]],
+    ["ecl","Plaques éclairantes (nombre)","num"],["ral","RAL bardage","txt"],["ralToit","RAL toiture","txt"],["finition","Finition","txt"],
+    ["bardage","Sens du bardage","sel",[["horizontal","Horizontal"],["vertical","Vertical"]]],["nbEP","Descentes d’eau","num"],
+    ["poteau","Poteaux (section)","txt"],["membrure","Traverses / membrures","txt"],["treillisSec","Treillis","txt"],["pannesSec","Pannes","txt"],["lissesSec","Lisses","txt"]];
+  const FREE = [["L","Longueur (m)","num"],["l","Largeur (m)","num"],["toit","Toiture","sel",[["2p","2 pans"],["1p","1 pan (pente)"],["1ph","1 pan (hauteurs avant / arrière)"],["plat","Plat"]]],["H","Hauteur au poteau (m)","num"],["hA","Hauteur avant (m)","num"],["hB","Hauteur arrière (m)","num"],["pente","Pente (%)","num"],["n","Nombre de portiques ou fermes","num"],["entPannes","Entraxe pannes (m)","num"],["entLisses","Entraxe lisses (m)","num"],["potelets","Potelets par pignon","num"]];
+  const fields = (o ? [] : FREE).concat(F);
+  const getV = (P, k) => { const [a, b] = k.split("."); if(!b) return P[a]; return P.auvent ? P.auvent[b] : ""; };
+  const store = () => o ? (o.sch = o.sch || {}) : free;
+  const P0 = schNorm(getP());
+  form.innerHTML = fields.map(([k, lab, t, list]) => { let v = getV(P0.err ? getP() : P0, k); if(k === "auvent.cote" && !(P0.auvent)) v = ""; if(k === "auvent.poteaux") v = v ? "1" : ""; if(typeof v === "number") v = String(Math.round(v*100)/100).replace(".", ",");
+    return `<label class="f"><span>${esc(lab)}</span>${t === "sel" ? `<select data-k="${k}">${opts(list, v == null ? "" : v)}</select>` : `<input data-k="${k}" ${t === "num" ? 'inputmode="decimal"' : ""} value="${esc(v == null ? "" : v)}">`}</label>`; }).join("");
+  $$("[data-k]", form).forEach(inp => inp.addEventListener(inp.tagName === "SELECT" ? "change" : "input", () => {
+    const k = inp.dataset.k, v = inp.value, S2 = store(), [a, b] = k.split(".");
+    if(b){
+      if(a === "auvent" && b === "cote" && !v){ S2.auvent = null; }
+      else { const base = S2.auvent || (getP().auvent ? Object.assign({}, getP().auvent) : {cote:"arriere", p:"2,5", pente:"10"}); base[b] = b === "poteaux" ? !!v : v; S2.auvent = base; }
+    } else S2[a] = v;
+    if(o) touch(dv);
+    draw();
+  }));
+  $$("[data-v]", box).forEach(b => b.addEventListener("click", () => { vue = b.dataset.v; draw(); }));
+  const sd = $("[data-sd]", box); if(sd) sd.addEventListener("change", e => { o.schemaDevis = e.target.checked; touch(dv); });
+  const cl = o ? getClient(dv.clientId) : ctx.client || null;
+  const name = slug(o ? o.name : (getP().titre || "batiment"));
+  const pngs = async () => { const r = schAll(getP()); if(r.err) throw new Error(r.err); const out = []; for(const [k, t] of SCH_VUES) out.push({k, t, png:await schPng(r[k], 1800)}); return out; };
+  const btns = [
+    {label:"Télécharger (PNG)", onClick:() => { const r = schAll(getP()); if(r.err){ toast(r.err); return false; } schPng(r[vue], 2000).then(u => download(name + "-" + vue + ".png", null, null, u)).catch(e => toast(e.message)); return false; }},
+    {label:"Enregistrer dans le Drive", onClick:() => { schToDrive(pngs, cl, name); return false; }},
+    {label:"Envoyer au chat IA", onClick:() => { pngs().then(list => { IAS.att = IAS.att || []; list.forEach(x => IAS.att.push({kind:"image", label:"Schéma " + x.t, mt:"image/png", data:x.png.split(",")[1]})); if(cl) IA.sel = cl.id; iaStore(); $$(".modal-bg").forEach(m => m.remove()); if(DB.ui.tab !== "ia") setTab("ia"); else render(); toast("Schémas joints : écrivez votre question puis envoyez"); }).catch(e => toast(e.message)); return false; }},
+    {label:"Fermer", cls:"primary"}];
+  const m = modal("Schémas : " + schTitre(getP(), o), box, btns);
+  $(".modal", m).classList.add("wide");
+  draw();
+  return m;
+}
+async function schToDrive(pngs, cl, name){
+  if(!syncOn()){ toast("Réglez d’abord la synchronisation Google (menu ☰)"); return; }
+  toast("Envoi des schémas dans le Drive…");
+  try{
+    const list = await pngs(), d = today();
+    for(const x of list){ const r = await syncCall({action:"putMedia", name:"schema-" + name + "-" + x.k + "-" + d + ".png", data:x.png, desc:"Schéma " + x.t + " du " + frDate(d), client:cl ? {id:cl.id, nom:clientName(cl)} : null, sub:"Documents"}); if(!r || !r.ok) throw new Error(r && r.err || "échec"); }
+    toast(cl ? "Schémas rangés dans le Drive : " + clientName(cl) + " › Documents" : "Schémas rangés dans le Drive (Photos et croquis)");
+  }catch(e){ toast("Envoi impossible : " + e.message); }
+}
+/* Schémas imprimés sur le devis : les trois vues. */
+function schDevisHtml(o){ const r = schAll(schFromOuv(o)); return r.err ? "" : SCH_VUES.map(([k]) => `<div class="schema">${r[k]}</div>`).join(""); }
+
+/* ---------- Poids et débits ---------- */
+/* Poids au mètre d’un profil ou d’un tube écrit en clair (catalogue, sinon calcul à partir des dimensions, acier 7,85 kg/dm³). */
+function kgmOf(sec){
+  if(!has(sec)) return 0;
+  const p = profil(sec); if(p) return p.kgm;
+  const s = String(sec).replace(/,/g, ".").replace(/\s+/g, " "), X = "\\s*[×xX*]\\s*", N = "(\\d+(?:\\.\\d+)?)";
+  let m;
+  if((m = s.match(new RegExp("(?:Ø|ø|rond|diam\\w*)\\s*" + N + X + N, "i")))){ const d = +m[1], e = +m[2]; return /plein/i.test(s) ? 0 : Math.PI * (d - e) * e * 7.85e-3; }
+  if((m = s.match(new RegExp("(?:rond plein|fer rond)\\s*(?:Ø|ø)?\\s*" + N, "i")))) return Math.PI * m[1] * m[1] / 4 * 7.85e-3;
+  if((m = s.match(new RegExp(N + X + N + X + N)))){ const a = +m[1], b = +m[2], e = +m[3];
+    if(/corni/i.test(s)) return (a + b - e) * e * 7.85e-3;
+    if(/^\s*(?:U|UPN|UAP)\b/i.test(s)) return (a + 2 * b - 2 * e) * e * 7.85e-3;
+    return (2 * (a + b) * e - 4 * e * e) * 7.85e-3; }
+  if((m = s.match(new RegExp("(?:plat|fer plat)\\s*" + N + X + N, "i")))) return m[1] * m[2] * 7.85e-3;
+  return 0;
+}
+function bestCut(pieces, bars, kerf){
+  const pcs = pieces.map(p => [Math.round(num(p[0]) * 1000) / 1000, Math.round(num(p[1]))]).filter(p => p[0] > 0 && p[1] > 0);
+  if(!pcs.length) return null;
+  const res = bars.map(b => cutPlan(pcs, b, kerf)).filter(r => r.bars.length && !r.tooLong.length).sort((a, b) => a.waste - b.waste);
+  if(res.length) return {bar:res[0].bar, nb:res[0].bars.length, waste:res[0].waste};
+  const longest = Math.max(...pcs.map(p => p[0]));
+  return {tooLong:longest};
+}
+function poidsOuv(o){
+  const out = {postes:[], env:[], kg:0, manque:[]}, g = TYPES[o.type].geo;
+  const bars = String((o.calc && o.calc.bars) || "6 ; 8 ; 10 ; 12").split(/[;\s]+/).map(num).filter(v => v > 0), kerf = num((o.calc && o.calc.kerf) || 3) / 1000;
+  if(g === "bat" && o.sec.ossature){
+    const Q = quantities(o);
+    Object.keys(MLKEY).forEach(tpl => {
+      const ln = o.sec.ossature.find(x => x.tpl === tpl); if(!ln || ln.off) return;
+      const pieces = autoPieces(o, tpl).filter(p => p[0] > 0 && p[1] > 0), ml = Q[MLKEY[tpl]] || pieces.reduce((a, p) => a + p[0] * p[1], 0);
+      if(!(ml > 0)) return;
+      const kgm = kgmOf(ln.ref), kg = ml * kgm;
+      out.postes.push({nom:tpl, ref:ln.ref || "", ml, kgm, kg, pieces, deb:bestCut(pieces, bars, kerf)});
+      if(!kgm) out.manque.push(tpl);
+    });
+    (o.hauvents || []).forEach((h, i) => { if(num(h.L) > 0 && num(h.l) > 0) out.postes.push({nom:"Hauvent " + (i + 1) + " (ossature)", ref:"", ml:0, kgm:0, kg:0, note:"au m², " + fmtQ(num(h.L) * num(h.l)) + " m² : profil à préciser"}); });
+  }
+  (o.tubes || []).forEach(t => { const c = tubeCalc(t); if(!(c.ml > 0)) return; const kgm = kgmOf(t.sec);
+    out.postes.push({nom:t.sec || "Tube", ref:"", ml:c.ml, kgm, kg:c.ml * kgm, pieces:(t.pieces || []).filter(p => num(p[0]) > 0 && num(p[1]) > 0).map(p => [num(p[0]), num(p[1])]), deb:{bar:c.bar, nb:c.nb, waste:c.waste}});
+    if(!kgm) out.manque.push(t.sec || "tube sans section"); });
+  activeLines(o).lines.forEach(x => {
+    const lab = lineLabel(x.L) + " " + (x.L.data.ref || ""), q = x.c.qty;
+    if(!(q > 0)) return;
+    if(x.c.unit === "m²" && /t[oô]le|platine|plaque acier|larmée/i.test(lab) && !/bac|sèche|seche|translucide/i.test(lab)){ const e = (lab.replace(",", ".").match(/(\d+(?:\.\d+)?)\s*mm/) || [])[1]; if(e){ out.postes.push({nom:lineLabel(x.L), ref:"", ml:0, kgm:0, kg:q * e * 7.85, note:fmtQ(q) + " m² × " + String(e).replace(".", ",") + " mm"}); } }
+    else if(x.c.unit === "kg" && !MLKEY[x.L.data.tpl]) out.postes.push({nom:lineLabel(x.L), ref:x.L.data.ref || "", ml:0, kgm:0, kg:q, note:"ligne au kg"});
+    else if(x.c.unit === "m²" && x.s.key !== "ossature" && !/ossature|lisse|panne|poteau|traverse|isolant|laine/i.test(lab) && /bac|t[oô]le s[eè]che|couverture|bardage|panneau/i.test(lab)){
+      const pan = /panneau/i.test(lab), ep = num((lab.replace(",", ".").match(/(\d+(?:\.\d+)?)\s*mm/) || [])[1]);
+      const kgm2 = pan ? 10 + (ep > 0 ? ep * 0.04 : 2) : (ep > 0 && ep < 2 ? ep * 7.85 * 1.25 : 6.5);
+      out.env.push({nom:lineLabel(x.L), m2:q, kg:q * kgm2});
+    }
+  });
+  out.kg = out.postes.reduce((a, p) => a + (p.kg || 0), 0);
+  out.kgEnv = out.env.reduce((a, p) => a + p.kg, 0);
+  return out;
+}
+function kgTxt(kg){ return kg >= 1000 ? fmtQ(Math.round(kg / 10) / 100) + " t" : fmtQ(Math.round(kg)) + " kg"; }
+function debTxt(p){
+  const pc = (p.pieces || []).filter(x => x[1] > 0).map(x => fmtQ(x[1]) + " × " + fmtQ(Math.round(x[0] * 100) / 100) + " m").join(" + ");
+  const d = p.deb;
+  const db = !d ? "" : d.tooLong ? "pièces de " + fmtQ(Math.round(d.tooLong * 100) / 100) + " m : plus longues que les barres, à abouter ou à commander sur mesure" : d.nb + " barre" + (d.nb > 1 ? "s" : "") + " de " + fmtQ(d.bar) + " m, chutes " + fmtQ(Math.round(d.waste * 10) / 10) + " %";
+  return [pc, db].filter(Boolean).join(" → ");
+}
+function poidsDevis(dv){ const list = dv.ouvrages.map(o => ({o, r:poidsOuv(o)})); return {list, kg:list.reduce((a, x) => a + x.r.kg, 0), kgEnv:list.reduce((a, x) => a + x.r.kgEnv, 0)}; }
+/* Texte pour l’IA et le résumé. */
+function poidsText(dv){
+  const P = poidsDevis(dv), L = [];
+  P.list.forEach(({o, r}) => {
+    if(!r.postes.length && !r.env.length) return;
+    L.push("  " + o.name + " : structure ≈ " + kgTxt(r.kg) + (r.manque.length ? " (sans " + r.manque.join(", ") + " : profil non renseigné)" : "") + (r.kgEnv ? " ; enveloppe ≈ " + kgTxt(r.kgEnv) : ""));
+    r.postes.forEach(p => L.push("   - " + p.nom + (p.ref ? " " + p.ref : "") + (p.ml ? " : " + fmtQ(Math.round(p.ml * 100) / 100) + " ml" : "") + (p.kgm ? " × " + fmtQ(Math.round(p.kgm * 100) / 100) + " kg/m" : "") + (p.kg ? " = " + kgTxt(p.kg) : p.ml ? " (poids inconnu : profil non renseigné)" : "") + (p.note ? " (" + p.note + ")" : "") + (debTxt(p) ? " ; débit : " + debTxt(p) : "")));
+    r.env.forEach(e => L.push("   - " + e.nom + " : " + fmtQ(Math.round(e.m2 * 10) / 10) + " m² ≈ " + kgTxt(e.kg) + " (indicatif)"));
+  });
+  if(!L.length) return "";
+  return "Poids et débits (calculés par le logiciel) : structure ≈ " + kgTxt(P.kg) + (P.kgEnv ? ", enveloppe ≈ " + kgTxt(P.kgEnv) + ", total ≈ " + kgTxt(P.kg + P.kgEnv) : "") + "\n" + L.join("\n");
+}
+function poidsHtml(dv, print){
+  const P = poidsDevis(dv); let rows = "";
+  P.list.forEach(({o, r}) => {
+    if(!r.postes.length && !r.env.length) return;
+    rows += `<tr class="ph"><td colspan="${print ? 3 : 2}"><b>${esc(o.name)}</b>${r.manque.length ? ` <small class="warn">profil manquant : ${esc(r.manque.join(", "))}</small>` : ""}</td><td class="r"><b>${kgTxt(r.kg)}</b></td></tr>`;
+    r.postes.forEach(p => { const db = debTxt(p), info = (p.ref ? esc(p.ref) : "") + (p.kgm ? (p.ref ? " · " : "") + fmtQ(Math.round(p.kgm*100)/100) + " kg/m" : "");
+      rows += `<tr><td>${esc(p.nom)}${info ? `<br><small>${info}</small>` : ""}${!print && db ? `<br><small>Débit : ${esc(db)}</small>` : ""}</td><td class="r">${p.ml ? fmtQ(Math.round(p.ml*100)/100) + " ml" : `<small>${esc(p.note || "")}</small>`}</td>${print ? `<td><small>${esc(db)}</small></td>` : ""}<td class="r">${p.kg ? kgTxt(p.kg) : "?"}</td></tr>`; });
+    r.env.forEach(e => { rows += `<tr><td>${esc(e.nom)} <small>(enveloppe, indicatif)</small></td><td class="r">${fmtQ(Math.round(e.m2*10)/10)} m²</td>${print ? "<td></td>" : ""}<td class="r">≈ ${kgTxt(e.kg)}</td></tr>`; });
+  });
+  if(!rows) return "";
+  const cs = print ? 3 : 2;
+  return `<table class="poids"><thead><tr><th>Poste</th><th class="r">Métré</th>${print ? "<th>Débit (barres du commerce)</th>" : ""}<th class="r">Poids</th></tr></thead><tbody>${rows}</tbody>
+    <tfoot><tr><td colspan="${cs}">Structure acier</td><td class="r">${kgTxt(P.kg)}</td></tr>${P.kgEnv ? `<tr><td colspan="${cs}">Enveloppe (bac, panneaux, indicatif)</td><td class="r">≈ ${kgTxt(P.kgEnv)}</td></tr><tr><td colspan="${cs}">Total</td><td class="r">≈ ${kgTxt(P.kg + P.kgEnv)}</td></tr>` : ""}</tfoot></table>`;
+}
+function poidsModal(dv){
+  const h = poidsHtml(dv);
+  modal("Poids et débits", h ? `<div class="poidsw">${h}</div><p class="muted small" style="margin:8px 0 0">Poids = métré × poids au mètre du profil écrit en référence sur chaque ligne (catalogue, ou calculé d’après les dimensions du tube). Débits optimisés en barres de 6, 8, 10 et 12 m (réglables dans l’outil « Débits »). Le poids des platines, goussets et boulons n’est pas compté.</p>` : `<p style="margin:0">Rien à peser pour l’instant : indiquez les profils (ex. HEA 200, IPE 270, Z 200) en référence sur les lignes d’ossature, ou les sections des tubes.</p>`);
+}
+
 
 /* ================= V2 étape 4 : connecté ================= */
 /* F1 : dictée vocale sur le champ de texte actif */
@@ -3510,6 +4110,7 @@ function iaCtxClient(c){
     if((ch.fournPdf||[]).length) L.push("  Devis fournisseurs : " + ch.fournPdf.map(p => p.fourn + (p.num ? " n° " + p.num : "") + (p.total ? " " + fmt(p.total) + " € HT" : "")).join(" ; "));
     if(dv.checklist){ const all = []; dv.checklist.sections.forEach(s => s.items.forEach(it => all.push("[tache:" + it.id + "] " + (it.done ? "✓ " : "☐ ") + s.title + " › " + it.label + (has(it.note) ? " (" + it.note + ")" : "")))); if(all.length) L.push("  Check-list :\n   " + all.slice(0, 120).join("\n   ")); }
     if((dv.iaIgnore||[]).length) L.push("  Ne plus signaler : " + dv.iaIgnore.join(" ; "));
+    try{ const pt = poidsText(dv); if(pt) L.push("  " + pt.replace(/\n/g, "\n  ")); }catch(e){}
   });
   const prev = IA.convs.filter(x => x.clientId === c.id && x.resume && (!IAS.conv || x.id !== IAS.conv.id)).slice(-5);
   if(prev.length) L.push("\nConversations IA précédentes : " + prev.map(x => frDate(x.date) + " « " + (x.titre||"") + " » : " + x.resume.replace(/\n/g, " ")).join(" | "));
@@ -3531,6 +4132,7 @@ function iaBlocks(pre, att, text){
   const b = [];
   if(pre.length) b.push({type:"text", text:pre.join("\n\n")});
   att.forEach(a => {
+    if(a.kind === "wait") return;
     if(a.kind === "image") b.push({type:"image", source:{type:"base64", media_type:a.mt, data:a.data}});
     else if(a.kind === "pdf") b.push({type:"document", source:{type:"base64", media_type:"application/pdf", data:a.data}, title:a.label});
     else b.push({type:"text", text:a.data});
@@ -3542,6 +4144,7 @@ async function iaSend(text){
   text = (text || "").trim();
   if(!text && !IAS.att.length) return;
   if(!syncOn()){ toast("Réglez d’abord la synchronisation Google (menu ☰)"); return; }
+  if(IAS.att.some(a => a.kind === "wait")){ toast("Lecture d’un fichier en cours, patientez une seconde"); return; }
   if(IAS.busy){ toast("L’IA répond encore, patientez"); return; }
   const c = iaClient();
   if(!IAS.conv){
@@ -3577,11 +4180,14 @@ async function iaPost(msg){
     if(d.memo === null){ const inf = await syncCall({action:"iaInfo", memo:true}); if(inf && inf.ok === false && /inconnue/.test(inf.err||"")) throw new Error("script Google à mettre à jour pour la V3 (voir le guide)"); d.memo = inf && inf.memoire || ""; }
     d.api.push({role:"user", content:msg.blocks});
     const c = getClient(conv.clientId);
-    const r = await syncCall({action:"ia", messages:d.api, memo:d.memo, fort:msg.fort, log:msg.text + (msg.att.length ? " [pièces jointes : " + msg.att.join(", ") + "]" : ""), conv:{id:conv.id, titre:conv.titre, docId:conv.docId||"", client:c ? {id:c.id, nom:clientName(c)} : null}});
+    const r = await syncCall({action:"ia", messages:d.api, memo:d.memo, fort:msg.fort, driveHash:d.driveHash || "", log:msg.text + (msg.att.length ? " [pièces jointes : " + msg.att.join(", ") + "]" : ""), conv:{id:conv.id, titre:conv.titre, docId:conv.docId||"", client:c ? {id:c.id, nom:clientName(c)} : null}});
     if(!r || !r.ok){ d.api.pop(); throw new Error(r && r.err || "pas de réponse du script Google"); }
+    if(r.userContent) d.api[d.api.length - 1] = {role:"user", content:r.userContent};
+    if(r.driveHash) d.driveHash = r.driveHash;
+    (r.echange || []).forEach(x => d.api.push(x));
     d.api.push({role:"assistant", content:r.content});
     const cents = (r.usd || 0) * USD_EUR * 100;
-    d.view.push({role:"ia", res:r.result, cents, model:r.model, applied:{}});
+    d.view.push({role:"ia", res:r.result, cents, model:r.model, applied:{}, lus:r.lus || []});
     msg.status = "ok"; delete msg.err; delete msg.blocks;
     if(r.result.titre) conv.titre = r.result.titre;
     if(r.result.resume) conv.resume = r.result.resume;
@@ -3592,7 +4198,7 @@ async function iaPost(msg){
     IAS.busy = false; iaSaveConv(); iaDraw(); iaAlerte();
     return true;
   }catch(e){
-    if(d.api.length && d.api[d.api.length-1].content === msg.blocks) d.api.pop();
+    if(d.api.length && d.api[d.api.length-1].role === "user" && d.api[d.api.length-1].content === msg.blocks) d.api.pop();
     const net = /fetch|network|Failed|Load failed/i.test(e.message || "");
     msg.status = net ? "wait" : "err"; msg.err = net ? "pas de réseau" : e.message;
     IAS.busy = false; iaSaveConv(); iaDraw();
@@ -3623,7 +4229,7 @@ function renderIA(main){
   else if(SYNC.ia === false) main.appendChild(el(`<section class="card"><p style="margin:0">Aucune clé API Claude n’est enregistrée pour l’instant. Ajoutez-la dans le menu ☰ › IA : clé API et réglages.</p></section>`));
   main.appendChild(el(`<div id="iaMsgs" class="iamsgs"></div>`));
   const comp = el(`<div class="iacomp"><div class="iacomp-in">
-    <div class="iaopts"><label class="iafort"><input type="checkbox" id="iaFort" ${IAS.fort?"checked":""}> Réfléchir plus <small>plus cher <span id="iaEstF"></span></small></label><span id="iaAtt" class="iaatt"></span></div>
+    <div class="iaopts"><label class="iafort"><input type="checkbox" id="iaFort" ${IAS.fort?"checked":""}> Réfléchir plus <small>plus cher <span id="iaEstF"></span></small></label><button type="button" class="btn sm" id="iaSch">📐 Schémas</button><span id="iaAtt" class="iaatt"></span></div>
     <div class="iarow"><button type="button" class="iab" id="iaPlus" aria-label="Ajouter un document">+</button><button type="button" class="iab mic" id="iaMic" aria-label="Dicter">🎤</button>
     <textarea id="iaIn" rows="1" placeholder="Écrivez ou dictez…"></textarea><button type="button" class="iab send" id="iaSend" aria-label="Envoyer">➤</button></div></div></div>`);
   main.appendChild(comp);
@@ -3632,7 +4238,7 @@ function renderIA(main){
     if(a === "new"){ IAS.conv = null; IAS.data = null; render(); }
     if(a === "newcl"){ IA.sel = ""; IAS.conv = null; IAS.data = null; iaStore(); render(); iaSend("Je veux créer une nouvelle fiche client avec son projet (devis, fiche chantier, check-list). Pose-moi les questions nécessaires, je vais te décrire le projet."); }
     if(a === "hist") iaHistory();
-    if(a === "find") iaFind();
+    if(a === "find") iaSearch();
   });
   const ta = $("#iaIn", comp);
   ta.addEventListener("input", () => iaGrow(ta));
@@ -3640,6 +4246,13 @@ function renderIA(main){
   $("#iaSend", comp).addEventListener("click", () => { iaMicCut(); iaSend($("#iaIn").value); });
   $("#iaMic", comp).addEventListener("click", iaMic);
   $("#iaPlus", comp).addEventListener("click", iaPlus);
+  $("#iaSch", comp).addEventListener("click", iaSchBtn);
+  ta.addEventListener("paste", e => { const f = [...((e.clipboardData && e.clipboardData.files) || [])]; if(f.length){ e.preventDefault(); iaAddFiles(f); } });
+  if(!document.body.dataset.iadrop){ document.body.dataset.iadrop = "1";
+    const isF = e => e.dataTransfer && [...(e.dataTransfer.types || [])].includes("Files");
+    document.addEventListener("dragover", e => { if(DB.ui.tab !== "ia" || !isF(e)) return; e.preventDefault(); document.body.classList.add("iadrag"); });
+    document.addEventListener("dragleave", e => { if(e.target === document.documentElement || !e.relatedTarget) document.body.classList.remove("iadrag"); });
+    document.addEventListener("drop", e => { if(DB.ui.tab !== "ia" || !isF(e)) return; e.preventDefault(); document.body.classList.remove("iadrag"); iaAddFiles([...e.dataTransfer.files]); }); }
   $("#iaFort", comp).addEventListener("change", e => { IAS.fort = e.target.checked; });
   if(IAS.conv && !IAS.data){ MEDIA.get("ia_" + IAS.conv.id).then(v => { IAS.data = v || iaBlank(); iaDraw(); }); }
   iaDraw();
@@ -3650,14 +4263,15 @@ function iaDraw(){
   const box = $("#iaMsgs"); if(!box) return;
   const cost = $("#iaCost"); if(cost) cost.textContent = (IAS.conv ? "Conversation " + fmtC(IAS.conv.cents) + " · " : "") + "Ce mois " + fmtC(IA.mois[ym()]);
   const ef = $("#iaEstF"); if(ef) ef.textContent = iaEst("fort");
-  const at = $("#iaAtt"); if(at){ at.innerHTML = IAS.att.map((a,i) => `<span class="iachip">${esc(a.label)} <button type="button" data-x="${i}" aria-label="Retirer">✕</button></span>`).join(""); $$("[data-x]", at).forEach(b => b.addEventListener("click", () => { IAS.att.splice(+b.dataset.x, 1); iaDraw(); })); }
+  const at = $("#iaAtt"); if(at){ at.innerHTML = IAS.att.map((a,i) => `<span class="iachip">${a.kind === "wait" ? "⏳ " : a.kind === "image" ? "🖼 " : a.kind === "pdf" ? "📄 " : "📝 "}${esc(a.label)} <button type="button" data-x="${i}" aria-label="Retirer">✕</button></span>`).join(""); $$("[data-x]", at).forEach(b => b.addEventListener("click", () => { IAS.att.splice(+b.dataset.x, 1); iaDraw(); })); }
   const d = IAS.data, c = iaClient();
   box.innerHTML = "";
   if(!d || !d.view.length){
     if(c){
       const dv = iaDevisOf(c), sug = ["Résume-moi le dossier", "Qu’est-ce qui manque au devis ?", "Prépare l’ordre de mission", "Quels jours pour la pose selon la météo ?"];
       if(dv && ((dv.chantier||{}).fournPdf||[]).length) sug.push("Compare les devis fournisseurs");
-      const w = el(`<div class="iawelcome"><p class="muted">Dossier <b>${esc(clientName(c))}</b>. L’IA voit la fiche, les devis, le chantier et les conversations précédentes de ce client.</p><div class="iasug">${sug.map(s => `<button type="button" class="btn sm">${esc(s)}</button>`).join("")}</div></div>`);
+      if(dv) sug.push("Poids de la structure et débits par poste");
+      const w = el(`<div class="iawelcome"><p class="muted">Dossier <b>${esc(clientName(c))}</b>. L’IA voit la fiche, les devis (avec poids et débits), le chantier, les fichiers du Drive du client et les conversations précédentes.</p><div class="iasug">${sug.map(s => `<button type="button" class="btn sm">${esc(s)}</button>`).join("")}</div></div>`);
       $$(".iasug button", w).forEach(b => b.addEventListener("click", () => iaSend(b.textContent)));
       box.appendChild(w);
     } else box.appendChild(el(`<div class="iawelcome"><p class="muted">Chat libre : posez n’importe quelle question, métier ou pas. Pour parler d’un dossier, choisissez le client en haut. Pour un nouveau client, touchez « + Créer fiche client ».</p></div>`));
@@ -3682,12 +4296,13 @@ function iaIaEl(m, i, last){
   const bub = $(".iabub", e);
   if((res.qcm||[]).length) bub.appendChild(iaQcmEl(res.qcm, last));
   (res.actions||[]).forEach((a, ai) => {
+    if(a.type === "schema"){ bub.appendChild(iaSchCard(m, ai, a)); return; }
     const done = m.applied && m.applied[ai];
     const card = el(`<div class="iaact ${done?"done":""}"><div><b>${esc(a.titre)}</b><br><span class="muted small">${a.items.length} élément${a.items.length>1?"s":""} à cocher</span></div>${done ? `<span class="chip g">${done === true ? "Appliqué" : esc(done)}</span>` : `<button type="button" class="btn sm blue">Voir et valider</button>`}</div>`);
     const b = $("button", card); if(b) b.addEventListener("click", () => iaPreview(m, ai));
     bub.appendChild(card);
   });
-  const foot = el(`<div class="iafoot"><button type="button" class="iaspk" aria-label="Lire à voix haute">🔊</button><span class="muted small">${m.model && /opus/.test(m.model) ? "Réflexion poussée · " : ""}${fmtC(m.cents)}</span></div>`);
+  const foot = el(`<div class="iafoot"><button type="button" class="iaspk" aria-label="Lire à voix haute">🔊</button><span class="muted small">${m.model && /opus/.test(m.model) ? "Réflexion poussée · " : ""}${fmtC(m.cents)}${(m.lus||[]).length ? " · a lu dans le Drive : " + esc(m.lus.join(", ")) : ""}</span></div>`);
   $(".iaspk", foot).addEventListener("click", ev => iaSpeak(iaPlain(res), ev.currentTarget));
   e.appendChild(foot);
   return e;
@@ -3783,28 +4398,24 @@ function iaSpeak(text, btn){
   IAS.speaking = btn; btn.classList.add("on"); ss.speak(u);
 }
 function iaPlus(){
-  const c = iaClient(), dv = iaDevisOf(c), ch = (dv && dv.chantier) || {}, est = iaEst("piece");
+  const c = iaClient(), est = iaEst("piece");
   const media = [];
   if(c) DB.devis.filter(d => d.clientId === c.id).forEach(d => { const x = d.chantier || {};
     (x.photos||[]).forEach(p => media.push({k:"ph_" + p.id, label:"Photo " + p.phase + " " + frDate(p.date), kind:"image"}));
     (x.croquis||[]).forEach(s => media.push({k:"sk_" + s.id, label:"Croquis " + s.titre, kind:"sketch"}));
     (x.fournPdf||[]).forEach(p => media.push({k:"pdf_" + p.id, label:"Devis " + p.fourn + (p.num ? " " + p.num : ""), kind:"pdf"})); });
-  const box = el(`<div style="display:flex;flex-direction:column;gap:8px"><p class="muted small" style="margin:0">Une photo ou un PDF coûte plus cher à lire qu’un message${est ? " (" + est + " par message en moyenne)" : ""}.</p>
-    <button type="button" class="btn" data-p="file">Photo ou fichier du téléphone (image, PDF)</button>
-    ${media.length ? `<p class="small" style="margin:6px 0 0"><b>Pièces du dossier</b></p>` + media.map((m,i) => `<button type="button" class="btn sm" data-m="${i}">${esc(m.label)}</button>`).join("") : (c ? `<p class="muted small" style="margin:0">Pas de photo, croquis ni PDF dans ce dossier.</p>` : "")}</div>`);
+  const box = el(`<div style="display:flex;flex-direction:column;gap:8px"><p class="muted small" style="margin:0">Une photo ou un PDF coûte plus cher à lire qu’un message${est ? " (" + est + " par message en moyenne)" : ""}. Vous pouvez en choisir plusieurs d’un coup.</p>
+    <button type="button" class="btn primary" data-p="file">Photos ou fichiers du téléphone</button>
+    <p class="muted small" style="margin:0">Photos, PDF, Word, Excel, texte. Sur PC, vous pouvez aussi glisser les fichiers dans la page ou les coller dans la barre.</p>
+    ${c ? `<button type="button" class="btn" data-p="drive">Fichiers du Drive de ${esc(clientName(c))}</button>` : ""}
+    ${media.length ? `<p class="small" style="margin:6px 0 0"><b>Pièces du dossier</b></p>` + media.map((m,i) => `<button type="button" class="btn sm" data-m="${i}">${esc(m.label)}</button>`).join("") : ""}</div>`);
   const md = modal("Ajouter à la question", box, [{label:"Fermer", cls:"ghost"}]);
   $("[data-p=file]", box).addEventListener("click", () => {
-    const inp = el(`<input type="file" accept="image/*,application/pdf" hidden>`); document.body.appendChild(inp);
-    inp.addEventListener("change", async () => { const f = inp.files[0]; inp.remove(); if(!f) return;
-      try{
-        if(f.type === "application/pdf"){ if(f.size > 20e6){ toast("PDF trop lourd (20 Mo maximum)"); return; } const du = await new Promise((res, rej) => { const r = new FileReader(); r.onload = () => res(r.result); r.onerror = rej; r.readAsDataURL(f); }); IAS.att.push({kind:"pdf", label:f.name, data:du.split(",")[1]}); }
-        else { const du = await readPhoto(f); IAS.att.push({kind:"image", label:f.name || "Photo", mt:"image/jpeg", data:du.split(",")[1]});
-          const dvx = iaDevisOf(iaClient()); if(dvx){ const id = uid(); await MEDIA.put("ph_" + id, du); chOf(dvx).photos.push({id, date:today(), phase:"Avant", note:"Envoyée au chat IA"}); touch(dvx); toast("Photo aussi rangée dans le dossier du chantier"); } }
-        md.remove(); iaDraw();
-      }catch(e){ toast("Fichier illisible"); }
-    });
+    const inp = el(`<input type="file" multiple accept="image/*,application/pdf,.pdf,.doc,.docx,.odt,.rtf,.xls,.xlsx,.ods,.csv,.txt,.md,.json,.ppt,.pptx" hidden>`); document.body.appendChild(inp);
+    inp.addEventListener("change", () => { const f = [...inp.files]; inp.remove(); if(!f.length) return; md.remove(); iaAddFiles(f); });
     inp.click();
   });
+  const dr = $("[data-p=drive]", box); if(dr) dr.addEventListener("click", () => { md.remove(); iaDrivePick(c); });
   $$("[data-m]", box).forEach(b => b.addEventListener("click", async () => {
     const m = media[+b.dataset.m], v = await MEDIA.get(m.k);
     if(!v){ toast("Pièce absente de ce téléphone : synchronisez d’abord"); return; }
@@ -3815,6 +4426,105 @@ function iaPlus(){
     md.remove(); iaDraw();
   }));
 }
+const iaDataUrl = f => new Promise((res, rej) => { const r = new FileReader(); r.onload = () => res(r.result); r.onerror = rej; r.readAsDataURL(f); });
+/* Ajoute des fichiers à la question : photos et PDF lus directement par l’IA, texte inclus tel quel,
+   Word / Excel / PowerPoint envoyés au script Google qui les range dans le Drive du client et en extrait le texte. */
+async function iaAddFiles(files){
+  const c = iaClient(), dvx = iaDevisOf(c), cli = c ? {id:c.id, nom:clientName(c)} : null;
+  let photos = 0;
+  for(const f of files){
+    const nm = f.name || "fichier", t = f.type || "";
+    try{
+      if(/^image\//.test(t)){
+        const du = await readPhoto(f); IAS.att.push({kind:"image", label:nm, mt:"image/jpeg", data:du.split(",")[1]});
+        if(dvx){ const id = uid(); await MEDIA.put("ph_" + id, du); chOf(dvx).photos.push({id, date:today(), phase:"Avant", note:"Envoyée au chat IA : " + nm}); photos++; }
+      } else if(t === "application/pdf" || /\.pdf$/i.test(nm)){
+        if(f.size > 20e6){ toast(nm + " : PDF trop lourd (20 Mo maximum)"); continue; }
+        const du = await iaDataUrl(f); IAS.att.push({kind:"pdf", label:nm, data:du.split(",")[1]});
+        if(syncOn()) syncCall({action:"putMedia", name:nm, data:du, desc:"Envoyé au chat IA le " + frDate(today()), client:cli, sub:"Documents"}).catch(() => {});
+      } else if(/^text\//.test(t) || /\.(txt|csv|md|json)$/i.test(nm)){
+        const tx = await f.text(); IAS.att.push({kind:"text", label:nm, data:"[Fichier « " + nm + " »]\n" + tx.slice(0, 60000)});
+      } else {
+        if(!syncOn()){ toast("Pour lire " + nm + ", réglez d’abord la synchronisation Google"); continue; }
+        if(f.size > 25e6){ toast(nm + " : fichier trop lourd (25 Mo maximum)"); continue; }
+        const w = {kind:"wait", label:nm}; IAS.att.push(w); iaDraw();
+        const du = await iaDataUrl(f);
+        syncCall({action:"lireFichier", nom:nm, data:du, client:cli}).then(r => {
+          if(!r || !r.ok) throw new Error(r && /inconnue/.test(r.err || "") ? "script Google à mettre à jour" : (r && r.err) || "échec");
+          Object.assign(w, r.kind === "text" ? {kind:"text", data:r.texte} : {kind:r.kind, mt:r.mt, data:r.data}); iaDraw();
+        }).catch(e => { IAS.att = IAS.att.filter(x => x !== w); iaDraw(); toast(nm + " illisible : " + e.message); });
+      }
+    }catch(e){ toast(nm + " : fichier illisible"); }
+  }
+  if(photos){ touch(dvx); toast(photos > 1 ? photos + " photos aussi rangées dans le dossier du chantier" : "Photo aussi rangée dans le dossier du chantier"); }
+  iaDraw();
+}
+/* Choix de fichiers dans le dossier Drive du client. */
+async function iaDrivePick(c){
+  if(!syncOn()){ toast("Réglez d’abord la synchronisation Google"); return; }
+  const box = el(`<div style="display:flex;flex-direction:column;gap:8px"><p class="muted small" style="margin:0" data-st>Lecture du dossier Drive…</p><div data-l style="display:flex;flex-direction:column;gap:6px"></div></div>`);
+  const md = modal("Drive de " + clientName(c), box, [{label:"Fermer", cls:"ghost"}, {label:"Joindre", cls:"primary", onClick:() => { const ch = $$("input[type=checkbox]:checked", box).map(x => list[+x.value]); if(!ch.length){ toast("Cochez au moins un fichier"); return false; }
+    ch.forEach(f => { const w = {kind:"wait", label:f.chemin.split("/").pop()}; IAS.att.push(w);
+      syncCall({action:"lireDrive", id:f.id}).then(r => { if(!r || !r.ok) throw new Error(r && r.err || "échec"); Object.assign(w, r.kind === "text" ? {kind:"text", data:r.texte} : {kind:r.kind, mt:r.mt, data:r.data}); iaDraw(); })
+        .catch(e => { IAS.att = IAS.att.filter(x => x !== w); iaDraw(); toast(w.label + " : " + e.message); }); });
+    iaDraw(); }}]);
+  let list = [];
+  try{
+    const r = await syncCall({action:"driveListe", client:{id:c.id, nom:clientName(c)}});
+    if(!r || !r.ok) throw new Error(r && /inconnue/.test(r.err || "") ? "le script Google doit être mis à jour (voir les étapes du 13/11)" : (r && r.err) || "échec");
+    list = r.fichiers || [];
+    $("[data-st]", box).textContent = list.length ? "Cochez les fichiers à joindre. L’IA peut aussi les ouvrir d’elle-même quand c’est utile." : "Le dossier Drive de ce client est vide.";
+    $("[data-l]", box).innerHTML = list.map((f, i) => `<label class="check" style="align-items:flex-start"><input type="checkbox" value="${i}"> <span>${esc(f.chemin)}<br><span class="muted small">${esc(f.type)} · ${esc(f.taille)} · ${esc(f.date)}</span></span></label>`).join("");
+  }catch(e){ $("[data-st]", box).textContent = "Lecture impossible : " + e.message; }
+}
+
+/* ---------- Schémas depuis le chat ---------- */
+function iaSchBtn(){
+  const c = iaClient();
+  const ouvs = c ? DB.devis.filter(d => d.clientId === c.id).flatMap(dv => dv.ouvrages.filter(o => TYPES[o.type].geo === "bat").map(o => ({dv, o}))) : [];
+  const box = el(`<div style="display:flex;flex-direction:column;gap:10px"><p class="muted small" style="margin:0">Trois vues : bâtiment habillé, écorché de l’ossature, vue en bout cotée. Les schémas sont dessinés par le logiciel (gratuit). L’IA peut d’abord compléter ce qui manque et vous poser les questions.</p>
+    ${ouvs.map((x, i) => `<div class="iahist"><div><b>${esc(x.o.name)}</b><br><span class="muted small">Devis ${esc(x.dv.num)} · ${esc(dimText(x.o, quantities(x.o)))}</span></div><div class="row"><button type="button" class="btn sm" data-v="${i}">Voir (gratuit)</button><button type="button" class="btn sm blue" data-a="${i}">Compléter avec l’IA</button></div></div>`).join("")}
+    ${c && !ouvs.length ? `<p class="small" style="margin:0">Aucun bâtiment dans les devis de ce client.</p>` : ""}
+    <button type="button" class="btn" data-n>Décrire un bâtiment à l’IA</button></div>`);
+  const md = modal("📐 Schémas", box, [{label:"Fermer", cls:"ghost"}]);
+  $$("[data-v]", box).forEach(b => b.addEventListener("click", () => { const x = ouvs[+b.dataset.v]; md.remove(); schOpen({dv:x.dv, o:x.o}); }));
+  $$("[data-a]", box).forEach(b => b.addEventListener("click", () => { const x = ouvs[+b.dataset.a]; md.remove();
+    iaSend("Prépare les schémas (vue habillée, écorché de l’ossature, vue en bout cotée) de l’ouvrage « " + x.o.name + " » [ouvrage:" + x.o.id + "] du devis " + x.dv.num + ". Vérifie les données du dossier. S’il manque une information qui change le dessin (portiques ou fermes treillis, passage libre, auvent, RAL, plaques éclairantes, sections des profils), pose-la en QCM ; sinon propose directement l’action schema."); }));
+  $("[data-n]", box).addEventListener("click", () => { md.remove(); iaSend("Je veux les schémas d’un bâtiment (vue habillée, écorché de l’ossature, vue en bout cotée). Pose-moi en QCM les questions nécessaires (dimensions, toiture et hauteurs, structure, auvent, RAL, ouvertures…), puis propose l’action schema."); });
+}
+const SCH_KEEP = ["structure","hp","auvent","ecl","ral","ralToit","finition","bardage","nbEP","poteau","membrure","treillisSec","pannesSec","lissesSec"];
+/* Paramètres d’une action « schema » proposée par l’IA. */
+function iaSchP(a, c){
+  let o = null, dv = null, base = {};
+  const ref = a.items.find(x => /^(sch\.)?ouvrage$/.test(String(x.cle).trim()));
+  if(ref){ const id = String(ref.valeur || "").replace(/^\[?\s*ouvrage:/, "").replace(/\].*$/, "").trim(); const f = iaFind(c, "ouvrage", id) || iaFind(null, "ouvrage", id); if(f){ o = f.o; dv = f.dv; base = schFromOuv(o); } }
+  const P = Object.assign({}, base), over = {}, ouv = {};
+  a.items.forEach(it => {
+    const k = String(it.cle || "").trim().replace(/^sch\./, ""), v = String(it.valeur == null ? "" : it.valeur).trim(); let q;
+    if(k === "ouvrage") return;
+    if((q = k.match(/^auvent\.(\w+)$/))){
+      if(q[1] === "cote" && /aucun|non|sans/i.test(v)){ P.auvent = null; over.auvent = null; return; }
+      const A = P.auvent = Object.assign({}, P.auvent || {cote:"arriere"}); A[q[1]] = q[1] === "poteaux" ? IA_OUI(v) : v; over.auvent = A; return; }
+    if((q = k.match(/^ouv(\d+)\.(\w+)$/))){ (ouv[q[1]] = ouv[q[1]] || {})[q[2]] = v; return; }
+    P[k] = v; if(SCH_KEEP.includes(k)) over[k] = v;
+  });
+  if(Object.keys(ouv).length) P.ouv = Object.keys(ouv).sort((x, y) => x - y).map(k => ouv[k]);
+  if(!P.titre && o) P.titre = o.name;
+  return {P, o, dv, over};
+}
+function iaSchCard(m, ai, a){
+  const c = iaConvClient() || iaClient(), X = iaSchP(a, c), r = schAll(X.P), done = m.applied && m.applied[ai];
+  const card = el(`<div class="iaact sch"><div><b>${esc(a.titre || "Schémas")}</b>${r.err ? `<p class="warn" style="margin:6px 0 0">${esc(r.err)}</p>` : `<div class="iaschs">${SCH_VUES.map(([k]) => `<div class="schema" data-v="${k}">${r[k]}</div>`).join("")}</div>`}
+    ${r.err ? "" : `<div class="row" style="margin-top:8px"><button type="button" class="btn sm blue" data-s="open">Agrandir et régler</button><button type="button" class="btn sm" data-s="drive">Enregistrer dans le Drive</button>${X.o ? (done ? `<span class="chip g">${esc(done)}</span>` : `<button type="button" class="btn sm" data-s="devis">Mettre sur le devis</button>`) : ""}</div>`}</div></div>`);
+  const open = vue => schOpen({P:X.P, client:c, vue});
+  $$("[data-v]", card).forEach(d => d.addEventListener("click", () => open(d.dataset.v)));
+  card.addEventListener("click", e => { const b = e.target.closest("[data-s]"); if(!b) return; const k = b.dataset.s;
+    if(k === "open") open("iso");
+    if(k === "drive") schToDrive(async () => { const out = []; for(const [v, t] of SCH_VUES) out.push({k:v, t, png:await schPng(r[v], 1800)}); return out; }, c, slug(X.P.titre || "batiment"));
+    if(k === "devis"){ X.o.sch = Object.assign(X.o.sch || {}, X.over); X.o.schemaDevis = true; touch(X.dv); m.applied = m.applied || {}; m.applied[ai] = "Sur le devis"; IAS.data.notes.push("Schémas mis sur le devis " + X.dv.num); iaSaveConv(); iaDraw(); toast("Schémas ajoutés au devis " + X.dv.num); }
+  });
+  return card;
+}
 
 /* ---------- Historique, recherche, clé API ---------- */
 function iaOpen(meta){ IA.sel = meta.clientId || ""; IAS.conv = meta; IAS.data = null; iaStore(); if(DB.ui.tab !== "ia") setTab("ia"); else render(); }
@@ -3824,7 +4534,7 @@ function iaHistory(){
   const md = modal("Conversations " + (IA.sel ? "de " + clientName(iaClient()) : "sans client"), box);
   $$("[data-o]", box).forEach(b => b.addEventListener("click", () => { md.remove(); iaOpen(list[+b.dataset.o]); }));
 }
-function iaFind(){
+function iaSearch(){
   if(!syncOn()){ toast("Réglez d’abord la synchronisation Google"); return; }
   const box = el(`<div style="display:flex;flex-direction:column;gap:10px"><div class="row" style="flex-wrap:nowrap"><input id="iaQ" type="search" placeholder="ex. platine Martin"><button type="button" class="btn primary" id="iaQgo">Chercher</button></div><div id="iaQr" class="muted small">Cherche dans toutes les conversations IA enregistrées dans le Drive.</div></div>`);
   modal("Rechercher dans les conversations", box);
