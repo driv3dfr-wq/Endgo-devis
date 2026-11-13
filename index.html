@@ -1158,6 +1158,7 @@ function renderDevis(main){
     const pc = el(`<section class="card"><div class="row" style="justify-content:space-between;align-items:center"><div><h2 style="margin:0">Poids et débits</h2><span class="muted small">Structure ≈ <b>${kgTxt(pk.kg)}</b>${pk.kgEnv ? " · enveloppe ≈ " + kgTxt(pk.kgEnv) : ""}${pk.list.some(x => x.r.manque.length) ? " · certains profils ne sont pas renseignés" : ""}</span></div><button class="btn sm" type="button">Voir le détail</button></div></section>`);
     $("button", pc).addEventListener("click", () => poidsModal(dv)); main.appendChild(pc);
   }
+  const drc = drivCard(dv); if(drc) main.appendChild(drc);
   const send = el(`<section class="card"><h2>Envoyer</h2><p class="muted small" style="margin:0 0 10px">Le mail s’ouvre dans votre messagerie avec tout le détail. Le devis téléchargé s’ouvre dans le navigateur, d’où vous pouvez l’imprimer ou l’enregistrer en PDF pour le joindre.</p>
     <div class="row"><button class="btn" data-a="four" type="button">Demande de prix fournisseur</button><button class="btn blue" data-a="cli" type="button">Envoyer le devis au client</button><button class="btn" data-a="dl" type="button">Télécharger le devis</button><button class="btn" data-a="wa" type="button">WhatsApp</button><button class="btn" data-a="sms" type="button">SMS</button></div>
     <div class="signinfo">${dv.signature ? `<img src="${dv.signature.img}" alt="Signature"><span>Signé par <b>${esc(dv.signature.nom||"le client")}</b> le ${frDate(dv.signature.date)} à ${esc(dv.signature.heure||"")}${dv.signature.option?" · option "+esc(dv.signature.option)+" retenue":""}</span><button class="btn sm ghost danger" data-a="unsign" type="button">Annuler la signature</button>` : `<button class="btn primary" data-a="sign" type="button">Faire signer le client sur l’écran</button>`}</div></section>`);
@@ -4094,6 +4095,7 @@ async function syncNow(silent){
     else if(localChanged){ if(await syncPush(false) === "conflict"){ syncBusy = false; syncConflict(); return; } }
     else { await syncMediaUp(); if(!baseGet()) baseSave(); }
     syncState("Synchronisé " + hhmm());
+    drivRelever();
     if(SYNC.v >= 3 && !SYNC.range) await syncRanger();
   }catch(e){ syncState("Synchro en échec"); if(!silent) toast("Synchro Google : " + e.message); }
   syncBusy = false;
@@ -4131,6 +4133,86 @@ function syncModal(){
     {label:"Récupérer de Google",onClick:() => { run(syncPull, "Données de Google récupérées"); return false; }},
     {label:"Envoyer sur Google",cls:"primary",onClick:() => { run(() => syncPush(false), "Données envoyées sur Google"); return false; }},
     {label:"Fermer",cls:"ghost",onClick:() => { read(); }}]);
+}
+
+/* ================= Liaison avec D-Riv 3D Métal (plans d'exécution) =================
+   Le devis part vers D-Riv 3D par le script Google (fichier driv3d.json du dossier ENDGO Devis).
+   D-Riv 3D renvoie son prix des plans, qui remplit la ligne « Études / plans / note de calcul ». */
+const DRIV_ACIER = ["complet","ossature","oss_bard","oss_couv","auvent","mezz","gc","escalier","portail","metal","autre"];
+const DRIV_ETUDES = "Études / plans / note de calcul";
+function drivFiche(dv){
+  const cl = getClient(dv.clientId);
+  const ouvrages = dv.ouvrages.map(o => {
+    const Q = quantities(o), P = poidsOuv(o), t = TYPES[o.type];
+    let schema = "";
+    if(t.geo === "bat" && num(o.d.L) > 0 && num(o.d.l) > 0){ try{ const r = schAll(schFromOuv(o)); if(!r.err) schema = r.iso; }catch(e){} }
+    return {name:o.name, type:o.type, typeLabel:t.label, variant:o.variant || "", q:Q, dim:dimText(o, Q), kg:Math.round(P.kg),
+      entPort:o.d.entPort, potelets:o.d.potelets, hauvents:o.hauvents || [], ouvertures:o.ouv || [],
+      tubes:(o.tubes || []).map(x => ({sec:x.sec, pieces:(x.pieces || []).reduce((a, p) => a + (Math.round(num(p[1])) || 0), 0) || 1, ml:tubeCalc(x).ml})),
+      profils:P.postes.filter(p => p.ref).map(p => ({label:p.nom, ref:p.ref, kg:Math.round(p.kg || 0)})), schema};
+  });
+  return {format:"endgo-dessin", v:1, id:dv.id, num:dv.num, titre:dv.titre || "", date:dv.date,
+    client:cl ? {nom:clientName(cl), ville:cl.ville || ""} : null, kg:Math.round(poidsDevis(dv).kg), ouvrages};
+}
+/* Ligne « Études / plans » de l'ouvrage acier choisi (créée si besoin). */
+function drivLine(dv){
+  const ok = o => o.sec && o.sec.commun;
+  const o = dv.ouvrages.find(x => x.id === (dv.driv || {}).ouv && ok(x)) || dv.ouvrages.find(x => ok(x) && !x.variant && DRIV_ACIER.includes(x.type)) || dv.ouvrages.find(ok);
+  if(!o) return null;
+  let L = o.sec.commun.find(x => x.tpl === DRIV_ETUDES);
+  if(!L){ L = mkLine([DRIV_ETUDES, "forfait", "one"]); o.sec.commun.unshift(L); }
+  return {o, L};
+}
+async function drivEnvoyer(dv){
+  if(!syncOn()){ toast("Activez d’abord la synchro Google (menu ☰)"); return; }
+  if(!dv.ouvrages.some(o => DRIV_ACIER.includes(o.type))){ toast("Ce devis n’a pas d’ouvrage en acier à dessiner"); return; }
+  toast("Envoi à D-Riv 3D…");
+  try{
+    const r = await syncCall({action:"drivEnvoi", fiche:drivFiche(dv)});
+    if(!r || !r.ok) throw new Error(r && r.err === "action inconnue" ? "le script Google n’est pas à jour" : (r && r.err) || "réponse inattendue");
+    const t = drivLine(dv);
+    dv.driv = Object.assign(dv.driv || {}, {envoye:r.envoye, ouv:t ? t.o.id : ""});
+    logDv(dv, "Envoyé à D-Riv 3D pour les plans"); touch(dv); render();
+    toast("Chantier envoyé à D-Riv 3D");
+  }catch(e){ toast("Envoi à D-Riv 3D impossible : " + e.message); }
+}
+/* Pose le prix reçu sur la ligne Études (sauf devis signé : il attend un clic). */
+function drivAppliquer(dv, force){
+  const d = dv.driv, t = drivLine(dv); if(!d || !t || !has(d.ht)) return false;
+  if(dv.signature && !force){ return false; }
+  const v = String(Math.round(num(d.ht) * 100) / 100).replace(".", ",");
+  if(t.L.pu === v && !t.L.off && d.applique === d.maj) return false;
+  t.L.pu = v; t.L.off = false; t.L.qty = ""; d.ouv = t.o.id; d.applique = d.maj;
+  logDv(dv, "Prix des plans D-Riv 3D : " + eur(num(d.ht)));
+  return true;
+}
+let drivBusy = false;
+async function drivRelever(){
+  if(drivBusy || !syncOn() || !DB.devis.some(d => d.driv && d.driv.envoye)) return;
+  drivBusy = true;
+  try{
+    const r = await syncCall({action:"drivLire"});
+    if(!r || !r.ok) return;
+    let chg = false;
+    DB.devis.forEach(dv => { const p = (r.prix || {})[dv.id]; if(!p || !dv.driv) return;
+      if(p.maj !== dv.driv.maj){ Object.assign(dv.driv, {ht:p.ht, mode:p.mode || "", h:p.h, kg:p.kg, maj:p.maj, statut:p.statut || ""}); chg = true; }
+      if(drivAppliquer(dv)){ dv.updated = today(); chg = true; } });
+    if(chg){ saveNow(); if(DB.ui.tab === "devis") render(); }
+  }catch(e){}
+  finally{ drivBusy = false; }
+}
+function drivCard(dv){
+  if(!dv.ouvrages.some(o => DRIV_ACIER.includes(o.type))) return null;
+  const d = dv.driv || {}, attente = d.envoye && has(d.ht) && dv.signature && d.applique !== d.maj;
+  const etat = !d.envoye ? "Pas encore envoyé. Le chantier (ouvrages, dimensions, poids, profils, schéma) part dans D-Riv 3D pour chiffrer les plans."
+    : "Envoyé le " + frDate(d.envoye.slice(0, 10)) + (has(d.ht) ? ". Prix des plans reçu : <b>" + eur(num(d.ht)) + " HT</b>" + (d.mode ? " (" + (d.mode === "tonne" ? "à la tonne" : "à l’heure") + ")" : "") + (d.maj ? ", mis à jour le " + frDate(d.maj.slice(0, 10)) + " à " + d.maj.slice(11, 16) + " (UTC)" : "") + ". Il est repris dans la ligne « " + DRIV_ETUDES + " »." : ". En attente du prix de D-Riv 3D.");
+  const c = el(`<section class="card"><div class="row" style="justify-content:space-between;align-items:center;gap:8px"><div><h2 style="margin:0">Plans D-Riv 3D</h2><p class="muted small" style="margin:4px 0 0">${etat}</p>
+    ${attente ? `<p class="small" style="margin:6px 0 0">Le devis est signé : le nouveau prix n’a pas été posé tout seul.</p>` : ""}</div>
+    <div class="row">${attente ? `<button class="btn sm" type="button" data-d="app">Appliquer ${eur(num(d.ht))}</button>` : ""}<button class="btn sm ${d.envoye ? "" : "blue"}" type="button" data-d="send">${d.envoye ? "Renvoyer les mises à jour" : "Envoyer à D-Riv 3D"}</button></div></div></section>`);
+  c.addEventListener("click", e => { const a = e.target.dataset.d;
+    if(a === "send") drivEnvoyer(dv);
+    if(a === "app" && drivAppliquer(dv, true)){ touch(dv); render(); toast("Prix des plans appliqué"); } });
+  return c;
 }
 
 /* ================= V3 : onglet Chat IA ================= */
