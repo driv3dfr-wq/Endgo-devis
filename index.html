@@ -4181,7 +4181,14 @@ async function iaPost(msg){
     d.api.push({role:"user", content:msg.blocks});
     const c = getClient(conv.clientId);
     const r = await syncCall({action:"ia", messages:d.api, memo:d.memo, fort:msg.fort, driveHash:d.driveHash || "", log:msg.text + (msg.att.length ? " [pièces jointes : " + msg.att.join(", ") + "]" : ""), conv:{id:conv.id, titre:conv.titre, docId:conv.docId||"", client:c ? {id:c.id, nom:clientName(c)} : null}});
-    if(!r || !r.ok){ d.api.pop(); throw new Error(r && r.err || "pas de réponse du script Google"); }
+    if(!r || !r.ok){
+      d.api.pop();
+      /* Réflexions d’anciens messages liées à une autre version du script (consignes ou outils changés) : on les retire de l’historique et on renvoie une fois. */
+      if(!msg.dropped && /signature|thinking/i.test(r && r.err || "")){
+        msg.dropped = true; iaDropThinking(d); IAS.busy = false; iaSaveConv(); return await iaPost(msg);
+      }
+      throw new Error(r && r.err || "pas de réponse du script Google");
+    }
     if(r.userContent) d.api[d.api.length - 1] = {role:"user", content:r.userContent};
     if(r.driveHash) d.driveHash = r.driveHash;
     (r.echange || []).forEach(x => d.api.push(x));
@@ -4204,6 +4211,9 @@ async function iaPost(msg){
     IAS.busy = false; iaSaveConv(); iaDraw();
     return false;
   }
+}
+function iaDropThinking(d){
+  d.api.forEach(m => { if(m.role === "assistant" && Array.isArray(m.content)){ const k = m.content.filter(x => x.type !== "thinking" && x.type !== "redacted_thinking"); m.content = k.length ? k : [{type:"text", text:"(réponse)"}]; } });
 }
 function iaAlerte(){
   const lim = num(IA.alerte) * 100, tot = IA.mois[ym()] || 0;
