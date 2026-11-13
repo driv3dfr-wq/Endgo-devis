@@ -371,6 +371,36 @@ body.iadrag .iacomp::before{content:"Déposez les fichiers ici";display:block;te
 .iab.mic.on{background:var(--danger);border-color:var(--danger);animation:pulse 1s infinite}
 .iab .sq{display:block;width:14px;height:14px;background:#fff;border-radius:2px}
 .iab.send{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
+.iamode{display:grid;grid-template-columns:1fr 1fr;gap:6px;background:var(--card2);border:1px solid var(--line);border-radius:14px;padding:4px}
+.iamode button{border:none;background:transparent;color:var(--ink);border-radius:10px;padding:9px 6px;font-weight:700;font-size:.95rem;display:flex;flex-direction:column;align-items:center;gap:1px;line-height:1.2}
+.iamode button small{font-weight:500;font-size:.72rem;color:var(--soft)}
+.iamode button.on{background:var(--royal);color:#fff}.iamode button.on small{color:rgba(255,255,255,.8)}
+.iabrinfo{margin:0;padding:8px 10px;border-radius:10px;background:var(--card2);border-left:3px solid var(--accent)}
+.iaready{align-self:stretch;font-size:1rem;padding:10px}
+.iaplusopts{display:flex;flex-direction:column;gap:6px}
+.iaopt{display:flex;flex-direction:column;align-items:flex-start;gap:1px;text-align:left;border:1px solid var(--line);background:var(--card2);color:var(--ink);border-radius:12px;padding:9px 12px;font-weight:700;font-size:.95rem}
+.iaopt small{font-weight:500;color:var(--soft);font-size:.78rem}.iaopt small b{color:var(--accent)}
+.iaopt.on{border-color:var(--accent);box-shadow:inset 0 0 0 1px var(--accent)}
+.iachip.opt{border-color:var(--accent);color:var(--ink)}
+.iatip{background:var(--card2);border:1px dashed var(--royal);border-radius:10px;padding:10px;font-size:.88rem;line-height:1.4}
+.iahint{margin-top:10px;font-size:.82rem;color:var(--soft);border-top:1px solid var(--line);padding-top:8px}
+.iab.mic{flex-basis:52px;width:52px;height:52px;font-size:1.5rem;background:var(--royal);border-color:var(--royal);color:#fff}
+.homebtns{display:grid;grid-template-columns:1fr;gap:10px}
+@media(min-width:700px){.homebtns{grid-template-columns:2fr 1fr 1fr}}
+.hb{display:grid;grid-template-columns:auto 1fr;grid-template-rows:auto auto;column-gap:12px;align-items:center;text-align:left;border:1px solid var(--line);background:var(--card2);color:var(--ink);border-radius:16px;padding:14px 16px}
+.hb span{grid-row:1/3;font-size:1.9rem}.hb b{font-size:1.1rem}.hb small{color:var(--soft);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.hb.primary{background:linear-gradient(120deg,#0B1E5B,#1F55C8);border-color:#1F55C8;color:#fff;padding:18px 16px}.hb.primary small{color:rgba(255,255,255,.85)}.hb.primary b{font-size:1.25rem}
+.hb:disabled{opacity:.5}
+.steps{display:flex;gap:3px;margin-top:6px;flex-wrap:wrap}
+.steps span{font-size:.7rem;padding:2px 7px;border-radius:99px;background:var(--card2);color:var(--soft);border:1px solid var(--line)}
+.steps span.done{color:var(--ok);border-color:transparent}
+.steps span.cur{background:var(--accent);border-color:var(--accent);color:var(--accent-ink);font-weight:700}
+.dossier{cursor:pointer}
+body.simple #tabs [data-tab=prix],body.simple #tabs [data-tab=checklist]{display:none}
+.toast.undo{pointer-events:auto;display:flex;gap:12px;align-items:center;padding:8px 8px 8px 18px}
+.toast.undo button{background:var(--accent);color:var(--accent-ink);border:none;border-radius:99px;padding:6px 14px;font-weight:700}
+.tourn{display:flex;gap:6px;justify-content:center;margin-top:12px}.tourn i{width:8px;height:8px;border-radius:50%;background:var(--line)}.tourn i.on{background:var(--accent)}
+.tourb{font-size:2.4rem;text-align:center;margin:0 0 6px}
 .iahist{display:flex;gap:8px;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid var(--line)}
 .iahist>div:first-child{min-width:0}
 .iaprev{display:flex;flex-direction:column;gap:10px}
@@ -632,6 +662,31 @@ function confirmBox(msg, okLabel, onOk){
 function setTab(t){ DB.ui.tab = t; save(); render(); window.scrollTo(0,0); }
 $("#tabs").addEventListener("click", e => { const b = e.target.closest("button[data-tab]"); if(b) setTab(b.dataset.tab); });
 
+const SIMPLE_KEY = "endgo_simple", TOUR_KEY = "endgo_tour_v1";
+function simpleOn(){ try{ return localStorage.getItem(SIMPLE_KEY) === "1"; }catch(e){ return false; } }
+function setSimple(on){ try{ localStorage.setItem(SIMPLE_KEY, on ? "1" : "0"); }catch(e){} document.body.classList.toggle("simple", on); }
+function tour(){
+  const P = [
+    ["👋", "Bienvenue", "Trois choses à retenir pour utiliser le logiciel au quotidien. Ça prend 30 secondes."],
+    ["🎤", "Nouveau projet", "Sur l’accueil, le gros bouton « Nouveau projet » ouvre un brouillon avec l’IA. Tu parles, tu envoies des photos et des plans, tu poses toutes tes questions, comme dans l’appli Claude."],
+    ["📝", "Le brouillon ne touche à rien", "Dans le brouillon, tu peux tout essayer : rien n’est enregistré dans un devis ni une fiche client. Tu peux aussi y ajouter un travail fait dans l’appli Claude (bouton 📥) : tout part ensemble au dossier."],
+    ["✅", "Mon dossier est prêt", "Quand c’est bon, ce bouton demande à l’IA un récap propre. Tu le relis, tu le corriges, puis tu l’envoies au dossier client : l’IA prépare la fiche et le devis."],
+    ["👍", "Rien sans ta validation", "L’IA propose, tu valides case par case. Et si tu t’es trompé, « ↩ Annuler » remet tout comme avant."]
+  ];
+  let i = 0;
+  const box = el(`<div><div class="tourb"></div><h3 style="margin:0 0 6px;text-align:center"></h3><p style="margin:0;text-align:center"></p><label class="check" style="margin-top:14px;display:none"><input type="checkbox" ${simpleOn() || window.innerWidth < 700 ? "checked" : ""}> Mode simple sur cet appareil (cache les onglets Prix et Check-list)</label><div class="tourn"></div></div>`);
+  const draw = () => { $(".tourb", box).textContent = P[i][0]; $("h3", box).textContent = P[i][1]; $("p", box).textContent = P[i][2];
+    $("label", box).style.display = i === P.length - 1 ? "flex" : "none";
+    $(".tourn", box).innerHTML = P.map((x, k) => `<i class="${k === i ? "on" : ""}"></i>`).join("");
+    $$(".modal .acts .btn", document).forEach(b => { if(b.dataset.nx) b.textContent = i === P.length - 1 ? "C’est parti" : "Suivant"; }); };
+  const end = () => { try{ localStorage.setItem(TOUR_KEY, "1"); }catch(e){} };
+  modal("Visite guidée", box, [{label:"Passer", cls:"ghost", onClick:end}, {label:"Suivant", cls:"primary", onClick:() => {
+    if(i < P.length - 1){ i++; draw(); return false; }
+    end(); setSimple($("input", box).checked); render();
+  }}]);
+  const nx = [...document.querySelectorAll(".modal .acts .btn")].pop(); if(nx) nx.dataset.nx = "1";
+  draw();
+}
 function applyTheme(){
   let t = "dark"; try{ t = localStorage.getItem(THEME_KEY) || "dark"; }catch(e){}
   document.documentElement.setAttribute("data-theme", t);
@@ -646,6 +701,8 @@ $("#menuBtn").addEventListener("click", e => {
     <button type="button" data-m="import">Importer une sauvegarde</button>
     <button type="button" data-m="sync">Synchronisation Google${syncOn()?" (active)":""}</button>
     <button type="button" data-m="ia">IA : clé API et réglages</button>
+    <button type="button" data-m="simple">${simpleOn() ? "Mode simple : activé ✓" : "Mode simple : désactivé"}</button>
+    <button type="button" data-m="tour">Revoir la visite guidée</button>
   </div>`);
   m.addEventListener("click", ev => {
     const a = ev.target.dataset.m; m.remove();
@@ -654,6 +711,8 @@ $("#menuBtn").addEventListener("click", e => {
     if(a==="import"){ $("#importFile").click(); }
     if(a==="sync") syncModal();
     if(a==="ia") iaKeyModal();
+    if(a==="simple"){ setSimple(!simpleOn()); render(); toast(simpleOn() ? "Mode simple activé sur cet appareil" : "Tous les onglets sont affichés"); }
+    if(a==="tour") tour();
   });
   $(".top-in").style.position="relative";
   $(".top-in").appendChild(m);
@@ -2214,7 +2273,46 @@ function relancesDues(){
   const j = num(S("relanceJ")) || 7;
   return DB.devis.filter(dv => dv.statut==="Envoyé").map(dv => ({dv, sent:(dv.dates||{})["Envoyé"] || dv.updated || dv.date})).filter(x => daysSince(x.sent) >= j && (!x.dv.relanceNext || x.dv.relanceNext <= today())).sort((a,b) => String(a.sent).localeCompare(String(b.sent)));
 }
+const ETAPES = ["Brouillon", "Dossier prêt", "Devis envoyé", "Signé", "Chantier"];
+function etapesHtml(i, ko){ return `<div class="steps">${ETAPES.map((s, k) => `<span class="${k < i ? "done" : k === i ? "cur" : ""}">${k < i ? "✓ " : ""}${s}</span>`).join("")}${ko ? `<span class="cur" style="background:var(--danger);border-color:var(--danger)">Refusé</span>` : ""}</div>`; }
+function etapeClient(c){
+  const ds = DB.devis.filter(d => d.clientId === c.id);
+  let i = 1;
+  if(ds.some(d => d.statut === "Envoyé")) i = 2;
+  if(ds.some(d => d.statut === "Accepté")) i = 3;
+  if(ds.some(d => d.statut === "Accepté" && d.chantier && d.chantier.debut && d.chantier.debut <= today())) i = 4;
+  const last = [c.created || ""].concat(ds.map(d => d.updated || d.date || ""), IA.convs.filter(x => x.clientId === c.id).map(x => x.date || "")).sort().pop();
+  return {i, ko: ds.length > 0 && ds.every(d => d.statut === "Refusé"), last};
+}
+function accueilTop(main){
+  const last = IA.convs.slice().reverse()[0];
+  const box = el(`<section class="card"><div class="homebtns">
+    <button type="button" class="hb primary" data-a="new"><span>🎤</span><b>Nouveau projet</b><small>J’en parle à l’IA, au brouillon</small></button>
+    <button type="button" class="hb" data-a="dos"><span>📂</span><b>Mes dossiers</b><small>${DB.clients.length} client${DB.clients.length > 1 ? "s" : ""}</small></button>
+    <button type="button" class="hb" data-a="last" ${last ? "" : "disabled"}><span>💬</span><b>Reprendre</b><small>${last ? esc(last.titre || "la dernière conversation") : "aucune conversation"}</small></button></div></section>`);
+  box.addEventListener("click", e => { const b = e.target.closest("[data-a]"); if(!b) return;
+    if(b.dataset.a === "new"){ IA.mode = "brouillon"; IAS.conv = null; IAS.data = null; iaStore(); setTab("ia"); setTimeout(() => { if(syncOn() && $("#iaMic")) iaMic(); }, 250); }
+    if(b.dataset.a === "dos"){ DB.ui.editClient = null; setTab("clients"); }
+    if(b.dataset.a === "last" && last) iaOpen(last);
+  });
+  main.appendChild(box);
+  const brs = IA.convs.filter(x => x.br && !x.envoye && x.titre).slice(-3).reverse();
+  const cls = DB.clients.map(c => Object.assign({c}, etapeClient(c))).filter(x => !(x.i === 4 && x.c.chantier === false)).sort((a, b) => String(b.last).localeCompare(String(a.last))).slice(0, 6);
+  if(!brs.length && !cls.length) return;
+  const dc = el(`<section class="card"><h2>Mes dossiers en cours</h2><div data-dos></div></section>`), dbx = $("[data-dos]", dc);
+  brs.forEach(x => { const it = el(`<div class="item dossier"><b>📝 ${esc(x.titre)}</b>${etapesHtml(0)}</div>`); it.addEventListener("click", () => iaOpen(x)); dbx.appendChild(it); });
+  cls.forEach(x => {
+    const it = el(`<div class="item dossier"><div class="row" style="justify-content:space-between;flex-wrap:nowrap"><b>${esc(clientName(x.c))}</b><button type="button" class="btn sm" data-chat>💬 Chat</button></div>${etapesHtml(x.i, x.ko)}</div>`);
+    it.addEventListener("click", e => {
+      if(e.target.closest("[data-chat]")){ IA.mode = "dossier"; IA.sel = x.c.id; IAS.conv = null; IAS.data = null; iaStore(); setTab("ia"); return; }
+      DB.ui.editClient = x.c.id; clientDraft = null; setTab("clients");
+    });
+    dbx.appendChild(it);
+  });
+  main.appendChild(dc);
+}
 function renderAccueil(main){
+  accueilTop(main);
   const y = String(new Date().getFullYear()), tots = new Map(), T = dv => { if(!tots.has(dv.id)) tots.set(dv.id, devisTotals(dv)); return tots.get(dv.id); };
   const signDate = dv => (dv.dates||{})["Accepté"] || (dv.signature && dv.signature.date) || dv.updated || dv.date;
   const env = DB.devis.filter(d => d.statut==="Envoyé"), acc = DB.devis.filter(d => d.statut==="Accepté"), accY = acc.filter(d => String(signDate(d)).startsWith(y));
@@ -2234,7 +2332,6 @@ function renderAccueil(main){
   const mv = months.map(m => acc.filter(d => String(signDate(d)).startsWith(m)).reduce((a,d) => a + T(d).ht, 0)), mx = Math.max(1, ...mv);
   const MO = ["janv.","févr.","mars","avr.","mai","juin","juil.","août","sept.","oct.","nov.","déc."];
   $("[data-bars]", k).innerHTML = months.map((m,i) => `<div><span class="num">${mv[i] ? fmtQ(Math.round(mv[i]/100)/10) + " k€" : ""}</span><i style="height:${Math.max(2, mv[i]/mx*90)}%"></i>${MO[+m.slice(5)-1]}</div>`).join("");
-  main.appendChild(k);
 
   // Relances
   const rel = relancesDues();
@@ -2281,6 +2378,7 @@ function renderAccueil(main){
     cbox.appendChild(it);
   }
   main.appendChild(cc);
+  if(!simpleOn()) main.appendChild(k);
 }
 
 /* D4 : historique d'un client */
@@ -4036,7 +4134,7 @@ function syncModal(){
 /* ================= V3 : onglet Chat IA ================= */
 /* La clé API Claude est rangée dans le script Google (jamais ici). Chaque message passe par l’action « ia » du script. */
 const IA_KEY = "endgo_ia_v3", USD_EUR = 0.92;
-let IA = {convs:[], mois:{}, stats:{}, alerte:"5", alerteMois:"", sel:""};
+let IA = {convs:[], mois:{}, stats:{}, alerte:"5", alerteMois:"", sel:"", mode:"brouillon"};
 try{ IA = Object.assign(IA, JSON.parse(localStorage.getItem(IA_KEY) || "{}")); }catch(e){}
 const IAS = {conv:null, data:null, fort:false, web:false, att:[], busy:false, rec:null, recStop:false, meteo:{}, speaking:null};
 function iaStore(){ try{ localStorage.setItem(IA_KEY, JSON.stringify(IA)); }catch(e){} }
@@ -4055,7 +4153,12 @@ function iaDescriptif(dv, o){
   if(DB.ui.tab !== "ia") setTab("ia"); else render();
   setTimeout(() => iaSend("Rédige le descriptif client de l’ouvrage « " + o.name + " » [ouvrage:" + o.id + "] du devis " + dv.num + (has(o.desc) ? " (améliore celui-ci : " + o.desc + ")" : "") + ". S’il te manque une information importante (finition, RAL, sens d’ouverture, remplissage…), pose-la en QCM, puis propose l’action pour l’enregistrer."), 50);
 }
-function iaClient(){ return IA.sel ? getClient(IA.sel) : null; }
+function iaBr(){ return IA.mode === "brouillon"; }
+function iaClient(){ return !iaBr() && IA.sel ? getClient(IA.sel) : null; }
+const IA_BR_CTX = "[Mode brouillon] Romain prépare un projet librement, comme au brouillon : discute, conseille, calcule, cherche, pose des QCM, propose des schémas si c’est utile. Ne propose AUCUNE action qui modifie le logiciel (liste d’actions vide, sauf « schema ») : rien n’est créé tant qu’il n’a pas touché « Mon dossier est prêt ». Retiens les infos décidées (client, adresse, dimensions, options, prix) pour le récapitulatif final.";
+const IA_RECAP_PLAN = "1) le client : nom ou société, téléphone, mail, adresse du chantier ; 2) chaque ouvrage : type, toutes les dimensions, toiture et pente, structure, bardage et couverture, options, ouvertures ; 3) les fournitures et prix trouvés, avec leurs sources ; 4) les contraintes du chantier et les délais ; 5) ce qui reste à vérifier ou à demander au client";
+const IA_RECAP_ASK = "✅ Mon dossier est prêt. Fais le récapitulatif complet et propre de ce qu’on a préparé, pour le transférer dans le dossier client du logiciel : " + IA_RECAP_PLAN + ". Écris seulement ce qui est décidé, pas les pistes abandonnées. Pas de QCM ni d’action : juste le récap, en texte simple avec des titres.";
+const IA_CLAUDE_PHRASE = "Fais-moi le récap ENDGO de ce projet, en texte simple avec des titres : " + IA_RECAP_PLAN + ". Seulement ce qui est décidé.";
 function iaConvClient(){ return IAS.conv && IAS.conv.clientId ? getClient(IAS.conv.clientId) : null; }
 function ym(){ return today().slice(0,7); }
 function fmtC(c){ c = c || 0; return c < 100 ? (Math.round(c*10)/10).toLocaleString("fr-FR") + " c€" : fmt(c/100) + " €"; }
@@ -4141,7 +4244,8 @@ function iaBlocks(pre, att, text){
   b.push({type:"text", text:text || "(voir la pièce jointe)"});
   return b;
 }
-async function iaSend(text){
+async function iaSend(text, opt){
+  opt = opt || {};
   text = (text || "").trim();
   if(!text && !IAS.att.length) return;
   if(!syncOn()){ toast("Réglez d’abord la synchronisation Google (menu ☰)"); return; }
@@ -4149,21 +4253,22 @@ async function iaSend(text){
   if(IAS.busy){ toast("L’IA répond encore, patientez"); return; }
   const c = iaClient();
   if(!IAS.conv){
-    IAS.conv = {id:uid(), titre:"", clientId:c ? c.id : "", date:today(), cents:0};
+    IAS.conv = {id:uid(), titre:"", clientId:c ? c.id : "", br:iaBr(), date:today(), cents:0};
     IA.convs.push(IAS.conv); IAS.data = iaBlank();
     if(IA.convs.length > 80){ IA.convs.splice(0, IA.convs.length - 80).forEach(x => MEDIA.del("ia_" + x.id)); }
   }
   const d = IAS.data, pre = [];
   if(!d.api.length && !d.view.some(m => m.role === "user")){
     pre.push(iaCtxGeneral());
+    if(IAS.conv.br) pre.push(IA_BR_CTX);
     if(c){ const cx = iaCtxClient(c); pre.push("[Dossier client]\n" + cx); d.ctxHash = hashStr(cx); }
   } else if(c){
     const cx = iaCtxClient(c), h = hashStr(cx);
     if(h !== d.ctxHash){ pre.push("[Dossier mis à jour]\n" + cx); d.ctxHash = h; }
   }
-  if(d.notes.length){ pre.push(d.notes.map(n => "[Appliqué] " + n).join("\n")); d.notes = []; }
+  if(d.notes.length){ pre.push(d.notes.map(n => /^\[/.test(n) ? n : "[Appliqué] " + n).join("\n")); d.notes = []; }
   const kind = IAS.web ? "web" : IAS.fort ? "fort" : IAS.att.some(a => a.kind !== "text") ? "piece" : "base";
-  const msg = {role:"user", text, att:IAS.att.map(a => a.label), blocks:iaBlocks(pre, IAS.att, text), fort:IAS.fort, web:IAS.web, kind, status:"wait"};
+  const msg = {role:"user", text:opt.show || text, att:IAS.att.map(a => a.label), blocks:iaBlocks(pre, IAS.att, text), fort:IAS.fort, web:IAS.web, recap:!!opt.recap, kind, status:"wait"};
   d.view.push(msg); IAS.att = []; IAS.fort = false; IAS.web = false;
   const ta = $("#iaIn"); if(ta){ ta.value = ""; iaGrow(ta); }
   ["#iaFort", "#iaWeb"].forEach(q => { const x = $(q); if(x) x.checked = false; });
@@ -4196,7 +4301,7 @@ async function iaPost(msg){
     (r.echange || []).forEach(x => d.api.push(x));
     d.api.push({role:"assistant", content:r.content});
     const cents = (r.usd || 0) * USD_EUR * 100;
-    d.view.push({role:"ia", res:r.result, cents, model:r.model, applied:{}, lus:r.lus || [], web:r.web || (msg.web ? {n:0, sources:[], err:"script Google pas encore mis à jour pour le web"} : null)});
+    d.view.push({role:"ia", res:r.result, cents, model:r.model, applied:{}, lus:r.lus || [], recap:!!msg.recap, web:r.web || (msg.web ? {n:0, sources:[], err:"script Google pas encore mis à jour pour le web"} : null)});
     msg.status = "ok"; delete msg.err; delete msg.blocks;
     if(r.result.titre) conv.titre = r.result.titre;
     if(r.result.resume) conv.resume = r.result.resume;
@@ -4214,6 +4319,61 @@ async function iaPost(msg){
     return false;
   }
 }
+/* Récap du brouillon (ou d’un travail de l’appli Claude) relu par Romain, puis envoyé dans une conversation du dossier client. */
+function iaTransfer(text){
+  const low = String(text).toLowerCase();
+  const guess = DB.clients.find(x => { const n = clientName(x).toLowerCase().trim(); return n.length > 2 && low.includes(n); });
+  const box = el(`<div style="display:flex;flex-direction:column;gap:10px"><p class="muted small" style="margin:0">Relis et corrige si besoin. L’IA du dossier va s’en servir pour préparer la fiche client et le devis ; tu valideras chaque élément avant qu’il soit enregistré.</p>
+    <textarea rows="12" style="font-size:.9rem">${esc(text)}</textarea>
+    <label class="f"><span>Dossier client</span><select><option value="">Nouveau client (l’IA crée la fiche)</option>${DB.clients.slice().sort((a,b) => clientName(a).localeCompare(clientName(b))).map(x => `<option value="${x.id}" ${guess && guess.id === x.id ? "selected" : ""}>${esc(clientName(x))}</option>`).join("")}</select></label></div>`);
+  modal("📤 Envoyer au dossier client", box, [{label:"Annuler", cls:"ghost"}, {label:"Envoyer au dossier", cls:"primary", onClick:() => {
+    const t = $("textarea", box).value.trim(), cid = $("select", box).value;
+    if(!t){ toast("Le récap est vide"); return false; }
+    if(IAS.busy){ toast("L’IA répond encore, patientez"); return false; }
+    const src = IAS.conv; if(src && src.br){ src.envoye = today(); iaSaveConv(); }
+    IA.mode = "dossier"; IA.sel = cid; IAS.conv = null; IAS.data = null; iaStore();
+    if(DB.ui.tab !== "ia") setTab("ia"); else render();
+    const ask = cid ? "Complète la fiche de ce client et crée ou mets à jour son devis à partir de ce dossier. Propose les actions à valider ; pose-moi des questions en QCM seulement s’il manque une information indispensable."
+      : "Crée la fiche client et le projet (devis, fiche chantier, check-list) à partir de ce dossier : propose l’action creer_projet à valider. Pose-moi des questions en QCM seulement s’il manque une information indispensable.";
+    iaSend("[Dossier préparé en brouillon]\n" + t + "\n\n" + ask, {show:"📤 Dossier préparé en brouillon :\n" + t});
+  }}]);
+}
+function iaImport(){
+  const box = el(`<div style="display:flex;flex-direction:column;gap:10px">
+    <p class="small" style="margin:0"><b>1.</b> Dans l’appli Claude, à la fin de ta conversation, envoie cette phrase :</p>
+    <div class="iatip">${esc(IA_CLAUDE_PHRASE)}</div><button type="button" class="btn sm" data-cp>Copier la phrase</button>
+    <p class="small" style="margin:0"><b>2.</b> Copie la réponse de Claude (appui long sur le message › Copier) et colle-la ici. Elle s’ajoute au brouillon ouvert, avec ce que tu y as déjà mis :</p>
+    <textarea rows="8" placeholder="Colle ici le récap de l’appli Claude"></textarea>
+    <p class="muted small" style="margin:0">Les photos et schémas faits dans l’appli Claude : enregistre-les sur le téléphone, puis ajoute-les avec le bouton + du chat.</p></div>`);
+  $("[data-cp]", box).addEventListener("click", async e => { try{ await navigator.clipboard.writeText(IA_CLAUDE_PHRASE); e.target.textContent = "Phrase copiée ✓"; }catch(err){ toast("Copie impossible : sélectionnez la phrase à la main"); } });
+  modal("📥 Depuis l’appli Claude", box, [{label:"Annuler", cls:"ghost"}, {label:"Continuer", cls:"primary", onClick:() => {
+    const t = $("textarea", box).value.trim(); if(!t){ toast("Colle d’abord le récap"); return false; }
+    if(IAS.busy){ toast("L’IA répond encore, patientez"); return false; }
+    if(!iaBr()){ IA.mode = "brouillon"; IAS.conv = null; IAS.data = null; iaStore(); }
+    if(DB.ui.tab !== "ia") setTab("ia"); else render();
+    const go = () => iaSend("[Travail fait dans l’appli Claude, collé par Romain]\n" + t + "\n\nAjoute ce travail au brouillon, avec ce qu’on a déjà noté ici. Réponds court : ce que tu retiens, ce qui contredit ou complète ce qu’on avait, et ce qui manque encore. Pas d’action.", {show:"📥 Travail de l’appli Claude ajouté au brouillon :\n" + t});
+    if(IAS.conv && !IAS.data) MEDIA.get("ia_" + IAS.conv.id).then(v => { IAS.data = v || iaBlank(); go(); }); else go();
+  }}]);
+}
+function toastUndo(msg, fn){
+  const t = $("#toast"); t.innerHTML = ""; t.classList.add("undo", "show");
+  t.appendChild(document.createTextNode(msg)); const b = el(`<button type="button">Annuler</button>`); t.appendChild(b);
+  b.addEventListener("click", () => { t.classList.remove("show", "undo"); fn(); });
+  clearTimeout(toast.t); toast.t = setTimeout(() => t.classList.remove("show", "undo"), 8000);
+}
+function iaUndoAsk(){
+  const u = IAS.undo; if(!u) return;
+  confirmBox(`Annuler « ${u.titre} » ? Les fiches et devis reviennent comme avant cette action${Date.now() - u.t > 30000 ? " (les modifications faites à la main depuis seront aussi annulées)" : ""}.`, "Annuler l’action", iaUndo);
+}
+function iaUndo(){
+  const u = IAS.undo; if(!u) return;
+  const ui = DB.ui; DB = Object.assign(blankDB(), JSON.parse(u.snap)); DB.ui = ui; migrate();
+  if(DB.ui.devisId && !curDevis()) DB.ui.devisId = DB.devis.length ? DB.devis[DB.devis.length-1].id : null;
+  if(DB.ui.editClient && !getClient(DB.ui.editClient)) DB.ui.editClient = null;
+  saveNow();
+  u.m.applied[u.ai] = false; if(IAS.data) IAS.data.notes.push("[Annulé par Romain] " + u.titre);
+  IAS.undo = null; iaSaveConv(); render(); toast("Annulé : tout est revenu comme avant");
+}
 function iaDropThinking(d){
   d.api.forEach(m => { if(m.role === "assistant" && Array.isArray(m.content)){ const k = m.content.filter(x => x.type !== "thinking" && x.type !== "redacted_thinking"); m.content = k.length ? k : [{type:"text", text:"(réponse)"}]; } });
 }
@@ -4228,29 +4388,33 @@ function iaAlerte(){
 /* ---------- Affichage ---------- */
 function renderIA(main){
   main.classList.add("iamain");
-  if(IAS.conv && IAS.conv.clientId !== IA.sel){ IAS.conv = null; IAS.data = null; }
   if(IA.sel && !getClient(IA.sel)){ IA.sel = ""; iaStore(); }
+  const br = iaBr();
+  if(IAS.conv && (!!IAS.conv.br !== br || (!br && (IAS.conv.clientId || "") !== IA.sel))){ IAS.conv = null; IAS.data = null; }
   const c = iaClient();
   const head = el(`<section class="card iahead">
-    <div class="iasel"><label class="f"><span>Dossier</span><select id="iaSel"><option value="">Autre (sans client)</option>${DB.clients.slice().sort((a,b) => clientName(a).localeCompare(clientName(b))).map(x => `<option value="${x.id}" ${x.id===IA.sel?"selected":""}>${esc(clientName(x))}</option>`).join("")}</select></label>
-    <button class="btn primary" type="button" data-h="newcl">+ Créer fiche client</button></div>
-    <div class="row iatools"><button class="btn sm" type="button" data-h="new">Nouvelle conversation</button><button class="btn sm" type="button" data-h="hist">Historique</button><button class="btn sm" type="button" data-h="find" aria-label="Rechercher dans les conversations">🔍 Rechercher</button>${IAS.conv && IAS.conv.docUrl ? `<a class="btn sm" href="${esc(IAS.conv.docUrl)}" target="_blank" rel="noopener">Google Docs</a>` : ""}
+    <div class="iamode"><button type="button" data-mode="brouillon" class="${br ? "on" : ""}">📝 Brouillon<small>idées, essais, recherches</small></button><button type="button" data-mode="dossier" class="${br ? "" : "on"}">📂 Dossier client<small>fiche et devis</small></button></div>
+    ${br ? `<p class="muted small iabrinfo">Ici tu peux tout essayer : rien n’est enregistré dans un devis ni une fiche client. Quand c’est prêt, touche « ✅ Mon dossier est prêt ».</p>` : `<div class="iasel"><label class="f"><span>Dossier</span><select id="iaSel"><option value="">Autre (sans client)</option>${DB.clients.slice().sort((a,b) => clientName(a).localeCompare(clientName(b))).map(x => `<option value="${x.id}" ${x.id===IA.sel?"selected":""}>${esc(clientName(x))}</option>`).join("")}</select></label>
+    <button class="btn primary" type="button" data-h="newcl">+ Créer fiche client</button></div>`}
+    <div class="row iatools"><button class="btn sm" type="button" data-h="new">${br ? "Nouveau brouillon" : "Nouvelle conversation"}</button><button class="btn sm" type="button" data-h="hist">${br ? "Mes brouillons" : "Historique"}</button>${br ? `<button class="btn sm" type="button" data-h="imp">📥 Depuis l’appli Claude</button>` : ""}${IAS.conv && IAS.conv.docUrl ? `<a class="btn sm" href="${esc(IAS.conv.docUrl)}" target="_blank" rel="noopener">Google Docs</a>` : ""}
     <span class="muted small iacost" id="iaCost"></span></div></section>`);
   main.appendChild(head);
   if(!syncOn()) main.appendChild(el(`<section class="card"><p style="margin:0">Le chat IA passe par votre script Google, qui garde la clé API Claude. Réglez d’abord <b>la synchronisation Google</b>, puis <b>la clé API</b>, toutes deux dans le menu ☰ en haut à droite.</p></section>`));
   else if(SYNC.ia === false) main.appendChild(el(`<section class="card"><p style="margin:0">Aucune clé API Claude n’est enregistrée pour l’instant. Ajoutez-la dans le menu ☰ › IA : clé API et réglages.</p></section>`));
   main.appendChild(el(`<div id="iaMsgs" class="iamsgs"></div>`));
   const comp = el(`<div class="iacomp"><div class="iacomp-in">
-    <div class="iaopts"><label class="iafort"><input type="checkbox" id="iaFort" ${IAS.fort?"checked":""}> Réfléchir plus <small>plus cher <span id="iaEstF"></span></small></label><label class="iafort"><input type="checkbox" id="iaWeb" ${IAS.web?"checked":""}> 🌐 Web <small>prix, catalogues <span id="iaEstW"></span></small></label><button type="button" class="btn sm" id="iaSch">📐 Schémas</button><span id="iaAtt" class="iaatt"></span></div>
-    <div class="iarow"><button type="button" class="iab" id="iaPlus" aria-label="Ajouter un document">+</button><button type="button" class="iab mic" id="iaMic" aria-label="Dicter">🎤</button>
-    <textarea id="iaIn" rows="1" placeholder="Écrivez ou dictez…"></textarea><button type="button" class="iab send" id="iaSend" aria-label="Envoyer">➤</button></div></div></div>`);
+    <button type="button" class="btn primary iaready" id="iaReady" hidden>✅ Mon dossier est prêt</button>
+    <div class="iaopts"><span id="iaAtt" class="iaatt"></span></div>
+    <div class="iarow"><button type="button" class="iab" id="iaPlus" aria-label="Ajouter : photos, fichiers, recherche web, schémas">+</button>
+    <textarea id="iaIn" rows="1" placeholder="${br ? "Raconte ton projet, écris ou dicte…" : "Écrivez ou dictez…"}"></textarea><button type="button" class="iab mic" id="iaMic" aria-label="Dicter">🎤</button><button type="button" class="iab send" id="iaSend" aria-label="Envoyer">➤</button></div></div></div>`);
   main.appendChild(comp);
-  $("#iaSel", head).addEventListener("change", e => { IA.sel = e.target.value; IAS.conv = null; IAS.data = null; iaStore(); render(); iaMeteo(iaClient()); });
+  $$("[data-mode]", head).forEach(b => b.addEventListener("click", () => { if(IA.mode === b.dataset.mode) return; IA.mode = b.dataset.mode; IAS.conv = null; IAS.data = null; iaStore(); render(); }));
+  const sel = $("#iaSel", head); if(sel) sel.addEventListener("change", e => { IA.sel = e.target.value; IAS.conv = null; IAS.data = null; iaStore(); render(); iaMeteo(iaClient()); });
   head.addEventListener("click", e => { const b = e.target.closest("[data-h]"); if(!b) return; const a = b.dataset.h;
     if(a === "new"){ IAS.conv = null; IAS.data = null; render(); }
     if(a === "newcl"){ IA.sel = ""; IAS.conv = null; IAS.data = null; iaStore(); render(); iaSend("Je veux créer une nouvelle fiche client avec son projet (devis, fiche chantier, check-list). Pose-moi les questions nécessaires, je vais te décrire le projet."); }
     if(a === "hist") iaHistory();
-    if(a === "find") iaSearch();
+    if(a === "imp") iaImport();
   });
   const ta = $("#iaIn", comp);
   ta.addEventListener("input", () => iaGrow(ta));
@@ -4258,15 +4422,13 @@ function renderIA(main){
   $("#iaSend", comp).addEventListener("click", () => { iaMicCut(); iaSend($("#iaIn").value); });
   $("#iaMic", comp).addEventListener("click", iaMic);
   $("#iaPlus", comp).addEventListener("click", iaPlus);
-  $("#iaSch", comp).addEventListener("click", iaSchBtn);
+  $("#iaReady", comp).addEventListener("click", () => { iaMicCut(); iaSend(IA_RECAP_ASK, {recap:true, show:"✅ Mon dossier est prêt : fais-moi le récap."}); });
   ta.addEventListener("paste", e => { const f = [...((e.clipboardData && e.clipboardData.files) || [])]; if(f.length){ e.preventDefault(); iaAddFiles(f); } });
   if(!document.body.dataset.iadrop){ document.body.dataset.iadrop = "1";
     const isF = e => e.dataTransfer && [...(e.dataTransfer.types || [])].includes("Files");
     document.addEventListener("dragover", e => { if(DB.ui.tab !== "ia" || !isF(e)) return; e.preventDefault(); document.body.classList.add("iadrag"); });
     document.addEventListener("dragleave", e => { if(e.target === document.documentElement || !e.relatedTarget) document.body.classList.remove("iadrag"); });
     document.addEventListener("drop", e => { if(DB.ui.tab !== "ia" || !isF(e)) return; e.preventDefault(); document.body.classList.remove("iadrag"); iaAddFiles([...e.dataTransfer.files]); }); }
-  $("#iaFort", comp).addEventListener("change", e => { IAS.fort = e.target.checked; });
-  $("#iaWeb", comp).addEventListener("change", e => { IAS.web = e.target.checked; });
   if(IAS.conv && !IAS.data){ MEDIA.get("ia_" + IAS.conv.id).then(v => { IAS.data = v || iaBlank(); iaDraw(); }); }
   iaDraw();
   if(c) iaMeteo(c);
@@ -4275,22 +4437,28 @@ function iaGrow(ta){ ta.style.height = "auto"; ta.style.height = Math.min(ta.scr
 function iaDraw(){
   const box = $("#iaMsgs"); if(!box) return;
   const cost = $("#iaCost"); if(cost) cost.textContent = (IAS.conv ? "Conversation " + fmtC(IAS.conv.cents) + " · " : "") + "Ce mois " + fmtC(IA.mois[ym()]);
-  const ef = $("#iaEstF"); if(ef) ef.textContent = iaEst("fort");
-  const ew = $("#iaEstW"); if(ew) ew.textContent = iaEst("web");
-  const at = $("#iaAtt"); if(at){ at.innerHTML = IAS.att.map((a,i) => `<span class="iachip">${a.kind === "wait" ? "⏳ " : a.kind === "image" ? "🖼 " : a.kind === "pdf" ? "📄 " : "📝 "}${esc(a.label)} <button type="button" data-x="${i}" aria-label="Retirer">✕</button></span>`).join(""); $$("[data-x]", at).forEach(b => b.addEventListener("click", () => { IAS.att.splice(+b.dataset.x, 1); iaDraw(); })); }
+  const rd = $("#iaReady"); if(rd) rd.hidden = !(iaBr() && IAS.data && IAS.data.view.some(m => m.role === "ia") && !IAS.busy);
+  const at = $("#iaAtt"); if(at){ at.innerHTML = (IAS.web ? `<span class="iachip opt">🌐 Recherche web ${iaEst("web")} <button type="button" data-xo="web" aria-label="Retirer">✕</button></span>` : "") + (IAS.fort ? `<span class="iachip opt">🧠 Réfléchir plus ${iaEst("fort")} <button type="button" data-xo="fort" aria-label="Retirer">✕</button></span>` : "") + IAS.att.map((a,i) => `<span class="iachip">${a.kind === "wait" ? "⏳ " : a.kind === "image" ? "🖼 " : a.kind === "pdf" ? "📄 " : "📝 "}${esc(a.label)} <button type="button" data-x="${i}" aria-label="Retirer">✕</button></span>`).join(""); $$("[data-x]", at).forEach(b => b.addEventListener("click", () => { IAS.att.splice(+b.dataset.x, 1); iaDraw(); })); $$("[data-xo]", at).forEach(b => b.addEventListener("click", () => { IAS[b.dataset.xo] = false; iaDraw(); })); }
   const d = IAS.data, c = iaClient();
   box.innerHTML = "";
   if(!d || !d.view.length){
-    if(c){
-      const dv = iaDevisOf(c), sug = ["Résume-moi le dossier", "Qu’est-ce qui manque au devis ?", "Prépare l’ordre de mission", "Quels jours pour la pose selon la météo ?"];
+    if(iaBr()){
+      const sug = ["Je te décris un nouveau projet", "Aide-moi à choisir les profils de la structure", "Quelles questions poser au client ?", "Fais-moi un schéma du bâtiment"];
+      const w = el(`<div class="iawelcome"><p class="muted">Brouillon : parle librement, envoie des photos, des plans, demande des prix (bouton +). Tu peux aussi reprendre un travail fait dans l’appli Claude.</p><div class="iasug">${sug.map(s => `<button type="button" class="btn sm">${esc(s)}</button>`).join("")}<button type="button" class="btn sm blue" data-imp>📥 Coller un travail de l’appli Claude</button></div></div>`);
+      $$(".iasug button:not([data-imp])", w).forEach(b => b.addEventListener("click", () => { if(/schéma/.test(b.textContent)) iaSchBtn(); else if(/décris/.test(b.textContent)) iaSend("Je vais te décrire un nouveau projet. Écoute-moi, puis pose-moi les questions utiles en QCM, une étape à la fois."); else iaSend(b.textContent); }));
+      $("[data-imp]", w).addEventListener("click", iaImport);
+      box.appendChild(w);
+    } else if(c){
+      const dv = iaDevisOf(c), sug = ["Résume-moi le dossier", "Qu’est-ce qui manque pour le devis ?", "Prépare l’ordre de mission", "Quels jours pour la pose selon la météo ?"];
       if(dv && ((dv.chantier||{}).fournPdf||[]).length) sug.push("Compare les devis fournisseurs");
       if(dv) sug.push("Poids de la structure et débits par poste");
       const w = el(`<div class="iawelcome"><p class="muted">Dossier <b>${esc(clientName(c))}</b>. L’IA voit la fiche, les devis (avec poids et débits), le chantier, les fichiers du Drive du client et les conversations précédentes.</p><div class="iasug">${sug.map(s => `<button type="button" class="btn sm">${esc(s)}</button>`).join("")}</div></div>`);
       $$(".iasug button", w).forEach(b => b.addEventListener("click", () => iaSend(b.textContent)));
       box.appendChild(w);
-    } else box.appendChild(el(`<div class="iawelcome"><p class="muted">Chat libre : posez n’importe quelle question, métier ou pas. Pour parler d’un dossier, choisissez le client en haut. Pour un nouveau client, touchez « + Créer fiche client ».</p></div>`));
+    } else box.appendChild(el(`<div class="iawelcome"><p class="muted">Choisissez le client en haut pour parler de son dossier : l’IA voit sa fiche, ses devis et son Drive. Pour un nouveau client, touchez « + Créer fiche client », ou préparez-le d’abord en 📝 Brouillon.</p></div>`));
     return;
   }
+  if(IAS.conv && IAS.conv.envoye) box.appendChild(el(`<p class="muted small iabrinfo">Ce brouillon a été envoyé au dossier client le ${frDate(IAS.conv.envoye)}. Tu peux continuer ici, puis renvoyer un nouveau récap.</p>`));
   const lastIa = d.view.map(m => m.role).lastIndexOf("ia");
   d.view.forEach((m, i) => box.appendChild(m.role === "user" ? iaUserEl(m, i) : iaIaEl(m, i, i === lastIa && i === d.view.length - 1)));
   if(IAS.busy) box.appendChild(el(`<div class="iamsg ia"><span class="iadots">${d.view.some(m => m.role === "user" && m.status === "send" && m.web) ? "L’IA cherche sur Internet" : "L’IA réfléchit"}<i>.</i><i>.</i><i>.</i></span></div>`));
@@ -4309,13 +4477,18 @@ function iaIaEl(m, i, last){
   const e = el(`<div class="iamsg ia"><div class="iabub">${iaMd(res.texte)}</div></div>`);
   const bub = $(".iabub", e);
   if((res.qcm||[]).length) bub.appendChild(iaQcmEl(res.qcm, last));
+  let hid = false;
   (res.actions||[]).forEach((a, ai) => {
     if(a.type === "schema"){ bub.appendChild(iaSchCard(m, ai, a)); return; }
+    if(IAS.conv && IAS.conv.br){ hid = true; return; }
     const done = m.applied && m.applied[ai];
     const card = el(`<div class="iaact ${done?"done":""}"><div><b>${esc(a.titre)}</b><br><span class="muted small">${a.items.length} élément${a.items.length>1?"s":""} à cocher</span></div>${done ? `<span class="chip g">${done === true ? "Appliqué" : esc(done)}</span>` : `<button type="button" class="btn sm blue">Voir et valider</button>`}</div>`);
     const b = $("button", card); if(b) b.addEventListener("click", () => iaPreview(m, ai));
+    const u = IAS.undo; if(done && u && u.m === m && u.ai === ai && Date.now() - u.t < 600000){ const ub = el(`<button type="button" class="btn sm ghost">↩ Annuler</button>`); ub.addEventListener("click", iaUndoAsk); card.appendChild(ub); }
     bub.appendChild(card);
   });
+  if(hid) bub.appendChild(el(`<div class="iahint">En brouillon, rien n’est modifié dans le logiciel. Quand tout est prêt, touche « ✅ Mon dossier est prêt ».</div>`));
+  if(m.recap){ const bt = el(`<button type="button" class="btn primary" style="margin-top:10px;width:100%">📤 Relire et envoyer au dossier client</button>`); bt.addEventListener("click", () => iaTransfer(res.texte || "")); bub.appendChild(bt); }
   if(m.web){
     const w = m.web, src = w.sources || [];
     bub.appendChild(el(`<div class="iasrc">${w.err ? `<span class="muted small">🌐 Recherche web impossible : ${esc(w.err)}</span>` : `<span class="muted small">🌐 ${w.n || 0} recherche${(w.n||0) > 1 ? "s" : ""} web${src.length ? " · sources :" : " · aucune source citée"}</span>${src.length ? "<ol>" + src.map(x => `<li><a href="${esc(x.url)}" target="_blank" rel="noopener">${esc(x.titre || x.url)}</a></li>`).join("") + "</ol>" : ""}`}</div>`));
@@ -4422,12 +4595,22 @@ function iaPlus(){
     (x.photos||[]).forEach(p => media.push({k:"ph_" + p.id, label:"Photo " + p.phase + " " + frDate(p.date), kind:"image"}));
     (x.croquis||[]).forEach(s => media.push({k:"sk_" + s.id, label:"Croquis " + s.titre, kind:"sketch"}));
     (x.fournPdf||[]).forEach(p => media.push({k:"pdf_" + p.id, label:"Devis " + p.fourn + (p.num ? " " + p.num : ""), kind:"pdf"})); });
-  const box = el(`<div style="display:flex;flex-direction:column;gap:8px"><p class="muted small" style="margin:0">Une photo ou un PDF coûte plus cher à lire qu’un message${est ? " (" + est + " par message en moyenne)" : ""}. Vous pouvez en choisir plusieurs d’un coup.</p>
+  const ew = iaEst("web"), ef = iaEst("fort");
+  const box = el(`<div style="display:flex;flex-direction:column;gap:8px"><div class="iaplusopts">
+    <button type="button" class="iaopt ${IAS.web ? "on" : ""}" data-o="web">🌐 Chercher sur Internet${IAS.web ? " ✓" : ""}<small>prix, catalogues, fiches produits · <b>plus cher${ew ? " " + ew : ""}</b></small></button>
+    <button type="button" class="iaopt ${IAS.fort ? "on" : ""}" data-o="fort">🧠 Réfléchir plus${IAS.fort ? " ✓" : ""}<small>questions difficiles, calculs · <b>plus cher${ef ? " " + ef : ""}</b></small></button>
+    <button type="button" class="iaopt" data-o="sch">📐 Schémas du bâtiment<small>dessinés par le logiciel, gratuit</small></button>
+    ${iaBr() ? `<button type="button" class="iaopt" data-o="imp">📥 Coller un travail de l’appli Claude<small>il s’ajoute à ce brouillon</small></button>` : ""}</div>
+    <p class="small" style="margin:6px 0 0"><b>Photos et fichiers</b></p><p class="muted small" style="margin:0">Une photo ou un PDF coûte plus cher à lire qu’un message${est ? " (" + est + " par message en moyenne)" : ""}. Vous pouvez en choisir plusieurs d’un coup.</p>
     <button type="button" class="btn primary" data-p="file">Photos ou fichiers du téléphone</button>
     <p class="muted small" style="margin:0">Photos, PDF, Word, Excel, texte. Sur PC, vous pouvez aussi glisser les fichiers dans la page ou les coller dans la barre.</p>
     ${c ? `<button type="button" class="btn" data-p="drive">Fichiers du Drive de ${esc(clientName(c))}</button>` : ""}
     ${media.length ? `<p class="small" style="margin:6px 0 0"><b>Pièces du dossier</b></p>` + media.map((m,i) => `<button type="button" class="btn sm" data-m="${i}">${esc(m.label)}</button>`).join("") : ""}</div>`);
-  const md = modal("Ajouter à la question", box, [{label:"Fermer", cls:"ghost"}]);
+  const md = modal("Ajouter", box, [{label:"Fermer", cls:"ghost"}]);
+  $$("[data-o]", box).forEach(b => b.addEventListener("click", () => { const o = b.dataset.o; md.remove();
+    if(o === "web" || o === "fort"){ IAS[o] = !IAS[o]; iaDraw(); if(IAS[o]) toast(o === "web" ? "Recherche web activée pour le prochain message" : "Réflexion poussée pour le prochain message"); }
+    if(o === "sch") iaSchBtn();
+    if(o === "imp") iaImport(); }));
   $("[data-p=file]", box).addEventListener("click", () => {
     const inp = el(`<input type="file" multiple accept="image/*,application/pdf,.pdf,.doc,.docx,.odt,.rtf,.xls,.xlsx,.ods,.csv,.txt,.md,.json,.ppt,.pptx" hidden>`); document.body.appendChild(inp);
     inp.addEventListener("change", () => { const f = [...inp.files]; inp.remove(); if(!f.length) return; md.remove(); iaAddFiles(f); });
@@ -4545,11 +4728,13 @@ function iaSchCard(m, ai, a){
 }
 
 /* ---------- Historique, recherche, clé API ---------- */
-function iaOpen(meta){ IA.sel = meta.clientId || ""; IAS.conv = meta; IAS.data = null; iaStore(); if(DB.ui.tab !== "ia") setTab("ia"); else render(); }
+function iaOpen(meta){ IA.mode = meta.br ? "brouillon" : "dossier"; IA.sel = meta.br ? IA.sel : meta.clientId || ""; IAS.conv = meta; IAS.data = null; iaStore(); if(DB.ui.tab !== "ia") setTab("ia"); else render(); }
 function iaHistory(){
-  const list = IA.convs.filter(x => (x.clientId || "") === IA.sel).slice().reverse();
-  const box = el(`<div style="display:flex;flex-direction:column;gap:8px">${list.length ? list.map((x,i) => `<div class="iahist"><div><b>${esc(x.titre || "Sans titre")}</b><br><span class="muted small">${frDate(x.date)} · ${fmtC(x.cents)}</span></div><div class="row"><button type="button" class="btn sm" data-o="${i}">Ouvrir</button>${x.docUrl ? `<a class="btn sm" href="${esc(x.docUrl)}" target="_blank" rel="noopener">Docs</a>` : ""}</div></div>`).join("") : `<p class="muted" style="margin:0">Pas encore de conversation ${IA.sel ? "pour ce client" : "sans client"} sur ce téléphone.</p>`}</div>`);
-  const md = modal("Conversations " + (IA.sel ? "de " + clientName(iaClient()) : "sans client"), box);
+  const br = iaBr(), list = IA.convs.filter(x => br ? x.br : !x.br && (x.clientId || "") === IA.sel).slice().reverse();
+  const box = el(`<div style="display:flex;flex-direction:column;gap:8px">${list.length ? list.map((x,i) => `<div class="iahist"><div><b>${esc(x.titre || "Sans titre")}</b><br><span class="muted small">${frDate(x.date)} · ${fmtC(x.cents)}${x.envoye ? " · envoyé au dossier" : ""}</span></div><div class="row"><button type="button" class="btn sm" data-o="${i}">Ouvrir</button>${x.docUrl ? `<a class="btn sm" href="${esc(x.docUrl)}" target="_blank" rel="noopener">Docs</a>` : ""}</div></div>`).join("") : `<p class="muted" style="margin:0">${br ? "Pas encore de brouillon" : "Pas encore de conversation " + (IA.sel ? "pour ce client" : "sans client")} sur ce téléphone.</p>`}</div>`);
+  const fb = el(`<button type="button" class="btn sm">🔍 Rechercher dans toutes les conversations</button>`); box.prepend(fb);
+  const md = modal(br ? "Mes brouillons" : "Conversations " + (IA.sel ? "de " + clientName(iaClient()) : "sans client"), box);
+  fb.addEventListener("click", () => { md.remove(); iaSearch(); });
   $$("[data-o]", box).forEach(b => b.addEventListener("click", () => { md.remove(); iaOpen(list[+b.dataset.o]); }));
 }
 function iaSearch(){
@@ -4611,9 +4796,9 @@ function iaPreview(m, ai){
   modal(a.titre, box, [{label:"Annuler", cls:"ghost"}, {label:"Valider", cls:"primary", onClick:() => {
     const sel = items.filter(x => x.on);
     if(!sel.length){ toast("Rien n’est coché"); return false; }
-    let r;
+    let r; const snap = JSON.stringify(dataPart());
     try{ r = iaApply(a, sel, c); }catch(e){ toast(e.message); return false; }
-    Promise.resolve(r).then(note => { m.applied[ai] = true; IAS.data.notes.push(a.titre + " : " + (note || sel.length + " élément(s)")); iaSaveConv(); iaDraw(); }).catch(e => toast(e.message));
+    Promise.resolve(r).then(note => { m.applied[ai] = true; IAS.data.notes.push(a.titre + " : " + (note || sel.length + " élément(s)")); IAS.undo = {m, ai, snap, titre:a.titre, t:Date.now()}; iaSaveConv(); iaDraw(); toastUndo("✓ " + a.titre, iaUndoAsk); }).catch(e => toast(e.message));
   }}]);
 }
 function iaParse(items){
@@ -4881,12 +5066,14 @@ function migrate(){
 }
 (function init(){
   applyTheme();
+  document.body.classList.toggle("simple", simpleOn());
   const fill = (id, arr) => { document.getElementById(id).innerHTML = arr.map(v=>`<option value="${esc(v)}">`).join(""); };
   Object.entries(DATALISTS).forEach(([k,v]) => fill("dl-"+k, v));
   migrate();
   if(DB.ui.devisId && !curDevis()) DB.ui.devisId = null;
   if(!DB.ui.devisId && DB.devis.length) DB.ui.devisId = DB.devis[DB.devis.length-1].id;
   render();
+  try{ if(!localStorage.getItem(TOUR_KEY)) setTimeout(tour, 700); }catch(e){}
   const s = document.getElementById("saveState");
   try{ localStorage.setItem("endgo_test","1"); localStorage.removeItem("endgo_test"); s.textContent = DB.clients.length||DB.devis.length ? "Données chargées" : "Sauvegarde sur cet appareil"; }
   catch(e){ s.textContent = "Sauvegarde locale indisponible : utilisez Exporter"; }
