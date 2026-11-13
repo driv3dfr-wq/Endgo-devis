@@ -670,7 +670,7 @@ function tour(){
     ["👋", "Bienvenue", "Trois choses à retenir pour utiliser le logiciel au quotidien. Ça prend 30 secondes."],
     ["🎤", "Nouveau projet", "Sur l’accueil, le gros bouton « Nouveau projet » ouvre un brouillon avec l’IA. Tu parles, tu envoies des photos et des plans, tu poses toutes tes questions, comme dans l’appli Claude."],
     ["📝", "Le brouillon ne touche à rien", "Dans le brouillon, tu peux tout essayer : rien n’est enregistré dans un devis ni une fiche client. Tu peux aussi y ajouter un travail fait dans l’appli Claude (bouton 📥) : tout part ensemble au dossier."],
-    ["✅", "Mon dossier est prêt", "Quand c’est bon, ce bouton demande à l’IA un récap propre. Tu le relis, tu le corriges, puis tu l’envoies au dossier client : l’IA prépare la fiche et le devis."],
+    ["✅", "Mon dossier est prêt", "Quand c’est bon, ce bouton demande à l’IA un récap propre. Tu le relis, tu le corriges, puis tu l’envoies au dossier client (la fiche se crée depuis le brouillon avec « 👤 Créer la fiche client ») : l’IA y prépare le devis."],
     ["👍", "Rien sans ta validation", "L’IA propose, tu valides case par case. Et si tu t’es trompé, « ↩ Annuler » remet tout comme avant."]
   ];
   let i = 0;
@@ -806,7 +806,7 @@ function renderClients(main){
   acts.appendChild(bSave);
   if(editing){
     const bIA = el(`<button class="btn" type="button">Demander à l’IA</button>`);
-    bIA.addEventListener("click", () => { IA.sel = editing.id; IAS.conv = null; IAS.data = null; iaStore(); setTab("ia"); });
+    bIA.addEventListener("click", () => { iaGo(editing.id); IAS.conv = null; IAS.data = null; iaStore(); setTab("ia"); });
     acts.appendChild(bIA);
     const bDev = el(`<button class="btn blue" type="button">Nouveau devis pour ce client</button>`);
     bDev.addEventListener("click", () => newDevis(editing.id));
@@ -3305,7 +3305,7 @@ function schOpen(ctx){
   const btns = [
     {label:"Télécharger (PNG)", onClick:() => { const r = schAll(getP()); if(r.err){ toast(r.err); return false; } schPng(r[vue], 2000).then(u => download(name + "-" + vue + ".png", null, null, u)).catch(e => toast(e.message)); return false; }},
     {label:"Enregistrer dans le Drive", onClick:() => { schToDrive(pngs, cl, name); return false; }},
-    {label:"Envoyer au chat IA", onClick:() => { pngs().then(list => { IAS.att = IAS.att || []; list.forEach(x => IAS.att.push({kind:"image", label:"Schéma " + x.t, mt:"image/png", data:x.png.split(",")[1]})); if(cl) IA.sel = cl.id; iaStore(); $$(".modal-bg").forEach(m => m.remove()); if(DB.ui.tab !== "ia") setTab("ia"); else render(); toast("Schémas joints : écrivez votre question puis envoyez"); }).catch(e => toast(e.message)); return false; }},
+    {label:"Envoyer au chat IA", onClick:() => { pngs().then(list => { IAS.att = IAS.att || []; list.forEach(x => IAS.att.push({kind:"image", label:"Schéma " + x.t, mt:"image/png", data:x.png.split(",")[1]})); if(cl) iaGo(cl.id); iaStore(); $$(".modal-bg").forEach(m => m.remove()); if(DB.ui.tab !== "ia") setTab("ia"); else render(); toast("Schémas joints : écrivez votre question puis envoyez"); }).catch(e => toast(e.message)); return false; }},
     {label:"Fermer", cls:"primary"}];
   const m = modal("Schémas : " + schTitre(getP(), o), box, btns);
   $(".modal", m).classList.add("wide");
@@ -4142,20 +4142,22 @@ function iaBlank(){ return {api:[], view:[], ctxHash:"", memo:null, notes:[]}; }
 function iaSaveConv(){ if(IAS.conv && IAS.data) MEDIA.put("ia_" + IAS.conv.id, IAS.data); iaStore(); }
 function iaSketch(dv, sk, png, ops){
   const cl = getClient(dv.clientId), cotes = (ops || []).filter(o => (o.t === "c" && has(o.v)) || (o.t === "x" && has(o.s))).map(o => o.t === "c" ? "cote " + o.v : "texte « " + o.s + " »");
-  IA.sel = cl ? cl.id : ""; IAS.conv = null; IAS.data = null; IAS.fort = false; iaStore();
+  iaGo(cl ? cl.id : ""); IAS.conv = null; IAS.data = null; IAS.fort = false; iaStore();
   IAS.att = [{kind:"image", label:"Croquis " + sk.titre, mt:"image/jpeg", data:png.split(",")[1]}];
   if(DB.ui.tab !== "ia") setTab("ia"); else render();
   setTimeout(() => iaSend("Analyse ce croquis « " + sk.titre + " » (devis " + dv.num + ")" + (cotes.length ? ". Cotes et textes écrits dessus : " + cotes.join(", ") : "") + ". Dis-moi ce que tu comprends, fais le débit complet (tubes, profilés, tôles, autres pièces) et pose-moi en QCM ce qui manque. Ensuite propose de l’ajouter au devis."), 50);
 }
 function iaDescriptif(dv, o){
   const cl = getClient(dv.clientId); if(!cl){ toast("Ce devis n’a pas de client"); return; }
-  IA.sel = cl.id; IAS.conv = null; IAS.data = null; IAS.fort = false; iaStore();
+  iaGo(cl.id); IAS.conv = null; IAS.data = null; IAS.fort = false; iaStore();
   if(DB.ui.tab !== "ia") setTab("ia"); else render();
   setTimeout(() => iaSend("Rédige le descriptif client de l’ouvrage « " + o.name + " » [ouvrage:" + o.id + "] du devis " + dv.num + (has(o.desc) ? " (améliore celui-ci : " + o.desc + ")" : "") + ". S’il te manque une information importante (finition, RAL, sens d’ouverture, remplissage…), pose-la en QCM, puis propose l’action pour l’enregistrer."), 50);
 }
 function iaBr(){ return IA.mode === "brouillon"; }
+function iaGo(cid){ IA.mode = cid ? "dossier" : "brouillon"; if(cid) IA.sel = cid; }
+function iaConvBr(x){ return !!(x && (x.br || !x.clientId)); }
 function iaClient(){ return !iaBr() && IA.sel ? getClient(IA.sel) : null; }
-const IA_BR_CTX = "[Mode brouillon] Romain prépare un projet librement, comme au brouillon : discute, conseille, calcule, cherche, pose des QCM, propose des schémas si c’est utile. Ne propose AUCUNE action qui modifie le logiciel (liste d’actions vide, sauf « schema ») : rien n’est créé tant qu’il n’a pas touché « Mon dossier est prêt ». Retiens les infos décidées (client, adresse, dimensions, options, prix) pour le récapitulatif final.";
+const IA_BR_CTX = "[Mode brouillon] Romain prépare un projet librement, comme au brouillon : discute, conseille, calcule, cherche, pose des QCM, propose des schémas si c’est utile. La seule action permise ici est « creer_client » (la fiche client seule, sans devis), quand Romain demande de créer la fiche, ou de toi-même dès que tu as le nom (ou la société) et au moins un téléphone, un mail ou une adresse : propose-la alors, une seule fois (s’il ne la valide pas, ne la repropose que s’il le demande ; si une ligne [Fiche client créée] existe, ne la propose plus jamais : les nouvelles coordonnées iront dans le récap et seront ajoutées à la fiche depuis le dossier client). Aucune autre action qui modifie le logiciel (sauf « schema ») : le devis sera fait dans le dossier client, après « Mon dossier est prêt ». Retiens les infos décidées (client, adresse, dimensions, options, prix) pour le récapitulatif final.";
 const IA_RECAP_PLAN = "1) le client : nom ou société, téléphone, mail, adresse du chantier ; 2) chaque ouvrage : type, toutes les dimensions, toiture et pente, structure, bardage et couverture, options, ouvertures ; 3) les fournitures et prix trouvés, avec leurs sources ; 4) les contraintes du chantier et les délais ; 5) ce qui reste à vérifier ou à demander au client";
 const IA_RECAP_ASK = "✅ Mon dossier est prêt. Fais le récapitulatif complet et propre de ce qu’on a préparé, pour le transférer dans le dossier client du logiciel : " + IA_RECAP_PLAN + ". Écris seulement ce qui est décidé, pas les pistes abandonnées. Pas de QCM ni d’action : juste le récap, en texte simple avec des titres.";
 const IA_CLAUDE_PHRASE = "Fais-moi le récap ENDGO de ce projet, en texte simple avec des titres : " + IA_RECAP_PLAN + ". Seulement ce qui est décidé.";
@@ -4251,6 +4253,7 @@ async function iaSend(text, opt){
   if(!syncOn()){ toast("Réglez d’abord la synchronisation Google (menu ☰)"); return; }
   if(IAS.att.some(a => a.kind === "wait")){ toast("Lecture d’un fichier en cours, patientez une seconde"); return; }
   if(IAS.busy){ toast("L’IA répond encore, patientez"); return; }
+  if(!iaBr() && !iaClient()){ toast("Choisissez d’abord un dossier client en haut"); return; }
   const c = iaClient();
   if(!IAS.conv){
     IAS.conv = {id:uid(), titre:"", clientId:c ? c.id : "", br:iaBr(), date:today(), cents:0};
@@ -4322,19 +4325,22 @@ async function iaPost(msg){
 /* Récap du brouillon (ou d’un travail de l’appli Claude) relu par Romain, puis envoyé dans une conversation du dossier client. */
 function iaTransfer(text){
   const low = String(text).toLowerCase();
-  const guess = DB.clients.find(x => { const n = clientName(x).toLowerCase().trim(); return n.length > 2 && low.includes(n); });
+  const src0 = IAS.conv, pre = src0 && src0.cid && getClient(src0.cid);
+  const guess = pre || DB.clients.find(x => { const n = clientName(x).toLowerCase().trim(); return n.length > 2 && low.includes(n); });
+  if(!DB.clients.length){ modal("Créer d’abord la fiche client", `<p style="margin:0">Il n’y a encore aucun dossier client. Dans le brouillon, touche « 👤 Créer la fiche client » : l’IA la prépare avec ce qu’elle sait, tu valides, puis tu pourras envoyer le récap au dossier.</p>`); return; }
   const box = el(`<div style="display:flex;flex-direction:column;gap:10px"><p class="muted small" style="margin:0">Relis et corrige si besoin. L’IA du dossier va s’en servir pour préparer la fiche client et le devis ; tu valideras chaque élément avant qu’il soit enregistré.</p>
     <textarea rows="12" style="font-size:.9rem">${esc(text)}</textarea>
-    <label class="f"><span>Dossier client</span><select><option value="">Nouveau client (l’IA crée la fiche)</option>${DB.clients.slice().sort((a,b) => clientName(a).localeCompare(clientName(b))).map(x => `<option value="${x.id}" ${guess && guess.id === x.id ? "selected" : ""}>${esc(clientName(x))}</option>`).join("")}</select></label></div>`);
+    <p class="muted small" style="margin:0">Le client n’est pas dans la liste ? Ferme, touche « 👤 Créer la fiche client » dans le brouillon, puis reviens ici.</p>
+    <label class="f"><span>Dossier client</span><select><option value="" ${guess ? "" : "selected"} disabled>Choisir le dossier client…</option>${DB.clients.slice().sort((a,b) => clientName(a).localeCompare(clientName(b))).map(x => `<option value="${x.id}" ${guess && guess.id === x.id ? "selected" : ""}>${esc(clientName(x))}</option>`).join("")}</select></label></div>`);
   modal("📤 Envoyer au dossier client", box, [{label:"Annuler", cls:"ghost"}, {label:"Envoyer au dossier", cls:"primary", onClick:() => {
     const t = $("textarea", box).value.trim(), cid = $("select", box).value;
     if(!t){ toast("Le récap est vide"); return false; }
+    if(!cid){ toast("Choisis le dossier client"); return false; }
     if(IAS.busy){ toast("L’IA répond encore, patientez"); return false; }
     const src = IAS.conv; if(src && src.br){ src.envoye = today(); iaSaveConv(); }
     IA.mode = "dossier"; IA.sel = cid; IAS.conv = null; IAS.data = null; iaStore();
     if(DB.ui.tab !== "ia") setTab("ia"); else render();
-    const ask = cid ? "Complète la fiche de ce client et crée ou mets à jour son devis à partir de ce dossier. Propose les actions à valider ; pose-moi des questions en QCM seulement s’il manque une information indispensable."
-      : "Crée la fiche client et le projet (devis, fiche chantier, check-list) à partir de ce dossier : propose l’action creer_projet à valider. Pose-moi des questions en QCM seulement s’il manque une information indispensable.";
+    const ask = "Complète la fiche de ce client et crée son projet (devis, fiche chantier, check-list) ou mets à jour son devis à partir de ce dossier. Propose les actions à valider ; pose-moi des questions en QCM seulement s’il manque une information indispensable.";
     iaSend("[Dossier préparé en brouillon]\n" + t + "\n\n" + ask, {show:"📤 Dossier préparé en brouillon :\n" + t});
   }}]);
 }
@@ -4367,6 +4373,7 @@ function iaUndoAsk(){
 }
 function iaUndo(){
   const u = IAS.undo; if(!u) return;
+  if(IAS.conv && IAS.conv.cid && !JSON.parse(u.snap).clients.some(x => x.id === IAS.conv.cid)) delete IAS.conv.cid;
   const ui = DB.ui; DB = Object.assign(blankDB(), JSON.parse(u.snap)); DB.ui = ui; migrate();
   if(DB.ui.devisId && !curDevis()) DB.ui.devisId = DB.devis.length ? DB.devis[DB.devis.length-1].id : null;
   if(DB.ui.editClient && !getClient(DB.ui.editClient)) DB.ui.editClient = null;
@@ -4390,12 +4397,13 @@ function renderIA(main){
   main.classList.add("iamain");
   if(IA.sel && !getClient(IA.sel)){ IA.sel = ""; iaStore(); }
   const br = iaBr();
-  if(IAS.conv && (!!IAS.conv.br !== br || (!br && (IAS.conv.clientId || "") !== IA.sel))){ IAS.conv = null; IAS.data = null; }
+  if(IAS.conv && (iaConvBr(IAS.conv) !== br || (!br && (IAS.conv.clientId || "") !== IA.sel))){ IAS.conv = null; IAS.data = null; }
   const c = iaClient();
   const head = el(`<section class="card iahead">
     <div class="iamode"><button type="button" data-mode="brouillon" class="${br ? "on" : ""}">📝 Brouillon<small>idées, essais, recherches</small></button><button type="button" data-mode="dossier" class="${br ? "" : "on"}">📂 Dossier client<small>fiche et devis</small></button></div>
-    ${br ? `<p class="muted small iabrinfo">Ici tu peux tout essayer : rien n’est enregistré dans un devis ni une fiche client. Quand c’est prêt, touche « ✅ Mon dossier est prêt ».</p>` : `<div class="iasel"><label class="f"><span>Dossier</span><select id="iaSel"><option value="">Autre (sans client)</option>${DB.clients.slice().sort((a,b) => clientName(a).localeCompare(clientName(b))).map(x => `<option value="${x.id}" ${x.id===IA.sel?"selected":""}>${esc(clientName(x))}</option>`).join("")}</select></label>
-    <button class="btn primary" type="button" data-h="newcl">+ Créer fiche client</button></div>`}
+    ${br ? `<p class="muted small iabrinfo">Ici tu peux tout essayer : rien n’est enregistré dans un devis ni une fiche client. Quand c’est prêt, touche « ✅ Mon dossier est prêt ».</p>` : `<div class="iasel"><label class="f"><span>Dossier</span><select id="iaSel"><option value="" ${IA.sel ? "" : "selected"} disabled>${DB.clients.length ? "Choisir un dossier…" : "Aucun dossier pour l’instant"}</option>${DB.clients.slice().sort((a,b) => clientName(a).localeCompare(clientName(b))).map(x => `<option value="${x.id}" ${x.id===IA.sel?"selected":""}>${esc(clientName(x))}</option>`).join("")}</select></label>
+    </div>`}
+    ${br ? `<button class="btn blue" type="button" data-h="fiche">${IAS.conv && IAS.conv.cid && getClient(IAS.conv.cid) ? "👤 Fiche créée : " + esc(clientName(getClient(IAS.conv.cid))) : "👤 Créer la fiche client"}</button>` : ""}
     <div class="row iatools"><button class="btn sm" type="button" data-h="new">${br ? "Nouveau brouillon" : "Nouvelle conversation"}</button><button class="btn sm" type="button" data-h="hist">${br ? "Mes brouillons" : "Historique"}</button>${br ? `<button class="btn sm" type="button" data-h="imp">📥 Depuis l’appli Claude</button>` : ""}${IAS.conv && IAS.conv.docUrl ? `<a class="btn sm" href="${esc(IAS.conv.docUrl)}" target="_blank" rel="noopener">Google Docs</a>` : ""}
     <span class="muted small iacost" id="iaCost"></span></div></section>`);
   main.appendChild(head);
@@ -4412,9 +4420,12 @@ function renderIA(main){
   const sel = $("#iaSel", head); if(sel) sel.addEventListener("change", e => { IA.sel = e.target.value; IAS.conv = null; IAS.data = null; iaStore(); render(); iaMeteo(iaClient()); });
   head.addEventListener("click", e => { const b = e.target.closest("[data-h]"); if(!b) return; const a = b.dataset.h;
     if(a === "new"){ IAS.conv = null; IAS.data = null; render(); }
-    if(a === "newcl"){ IA.sel = ""; IAS.conv = null; IAS.data = null; iaStore(); render(); iaSend("Je veux créer une nouvelle fiche client avec son projet (devis, fiche chantier, check-list). Pose-moi les questions nécessaires, je vais te décrire le projet."); }
+    if(a === "newcl_old"){ IA.sel = ""; IAS.conv = null; IAS.data = null; iaStore(); render(); iaSend("Je veux créer une nouvelle fiche client avec son projet (devis, fiche chantier, check-list). Pose-moi les questions nécessaires, je vais te décrire le projet."); }
     if(a === "hist") iaHistory();
     if(a === "imp") iaImport();
+    if(a === "fiche"){ const fc = IAS.conv && IAS.conv.cid && getClient(IAS.conv.cid);
+      if(fc){ DB.ui.editClient = fc.id; clientDraft = null; setTab("clients"); return; }
+      iaSend("Crée la fiche client avec ce qu’on sait déjà (nom ou société, téléphone, mail, adresse, adresse du chantier). S’il manque le nom ou un moyen de contact, demande-le moi en QCM ou en une question courte, puis propose l’action creer_client à valider. Seulement la fiche, pas de devis."); }
   });
   const ta = $("#iaIn", comp);
   ta.addEventListener("input", () => iaGrow(ta));
@@ -4455,7 +4466,7 @@ function iaDraw(){
       const w = el(`<div class="iawelcome"><p class="muted">Dossier <b>${esc(clientName(c))}</b>. L’IA voit la fiche, les devis (avec poids et débits), le chantier, les fichiers du Drive du client et les conversations précédentes.</p><div class="iasug">${sug.map(s => `<button type="button" class="btn sm">${esc(s)}</button>`).join("")}</div></div>`);
       $$(".iasug button", w).forEach(b => b.addEventListener("click", () => iaSend(b.textContent)));
       box.appendChild(w);
-    } else box.appendChild(el(`<div class="iawelcome"><p class="muted">Choisissez le client en haut pour parler de son dossier : l’IA voit sa fiche, ses devis et son Drive. Pour un nouveau client, touchez « + Créer fiche client », ou préparez-le d’abord en 📝 Brouillon.</p></div>`));
+    } else box.appendChild(el(`<div class="iawelcome"><p class="muted">Choisissez un dossier client en haut : l’IA voit sa fiche, ses devis et son Drive. Pour un nouveau client, commencez par le 📝 Brouillon : c’est là qu’on crée la fiche.</p></div>`));
     return;
   }
   if(IAS.conv && IAS.conv.envoye) box.appendChild(el(`<p class="muted small iabrinfo">Ce brouillon a été envoyé au dossier client le ${frDate(IAS.conv.envoye)}. Tu peux continuer ici, puis renvoyer un nouveau récap.</p>`));
@@ -4480,7 +4491,7 @@ function iaIaEl(m, i, last){
   let hid = false;
   (res.actions||[]).forEach((a, ai) => {
     if(a.type === "schema"){ bub.appendChild(iaSchCard(m, ai, a)); return; }
-    if(IAS.conv && IAS.conv.br){ hid = true; return; }
+    if(IAS.conv && IAS.conv.br && a.type !== "creer_client"){ hid = true; return; }
     const done = m.applied && m.applied[ai];
     const card = el(`<div class="iaact ${done?"done":""}"><div><b>${esc(a.titre)}</b><br><span class="muted small">${a.items.length} élément${a.items.length>1?"s":""} à cocher</span></div>${done ? `<span class="chip g">${done === true ? "Appliqué" : esc(done)}</span>` : `<button type="button" class="btn sm blue">Voir et valider</button>`}</div>`);
     const b = $("button", card); if(b) b.addEventListener("click", () => iaPreview(m, ai));
@@ -4728,9 +4739,9 @@ function iaSchCard(m, ai, a){
 }
 
 /* ---------- Historique, recherche, clé API ---------- */
-function iaOpen(meta){ IA.mode = meta.br ? "brouillon" : "dossier"; IA.sel = meta.br ? IA.sel : meta.clientId || ""; IAS.conv = meta; IAS.data = null; iaStore(); if(DB.ui.tab !== "ia") setTab("ia"); else render(); }
+function iaOpen(meta){ IA.mode = iaConvBr(meta) ? "brouillon" : "dossier"; if(!iaConvBr(meta)) IA.sel = meta.clientId; IAS.conv = meta; IAS.data = null; iaStore(); if(DB.ui.tab !== "ia") setTab("ia"); else render(); }
 function iaHistory(){
-  const br = iaBr(), list = IA.convs.filter(x => br ? x.br : !x.br && (x.clientId || "") === IA.sel).slice().reverse();
+  const br = iaBr(), list = IA.convs.filter(x => br ? iaConvBr(x) : !iaConvBr(x) && x.clientId === IA.sel).slice().reverse();
   const box = el(`<div style="display:flex;flex-direction:column;gap:8px">${list.length ? list.map((x,i) => `<div class="iahist"><div><b>${esc(x.titre || "Sans titre")}</b><br><span class="muted small">${frDate(x.date)} · ${fmtC(x.cents)}${x.envoye ? " · envoyé au dossier" : ""}</span></div><div class="row"><button type="button" class="btn sm" data-o="${i}">Ouvrir</button>${x.docUrl ? `<a class="btn sm" href="${esc(x.docUrl)}" target="_blank" rel="noopener">Docs</a>` : ""}</div></div>`).join("") : `<p class="muted" style="margin:0">${br ? "Pas encore de brouillon" : "Pas encore de conversation " + (IA.sel ? "pour ce client" : "sans client")} sur ce téléphone.</p>`}</div>`);
   const fb = el(`<button type="button" class="btn sm">🔍 Rechercher dans toutes les conversations</button>`); box.prepend(fb);
   const md = modal(br ? "Mes brouillons" : "Conversations " + (IA.sel ? "de " + clientName(iaClient()) : "sans client"), box);
@@ -4796,9 +4807,11 @@ function iaPreview(m, ai){
   modal(a.titre, box, [{label:"Annuler", cls:"ghost"}, {label:"Valider", cls:"primary", onClick:() => {
     const sel = items.filter(x => x.on);
     if(!sel.length){ toast("Rien n’est coché"); return false; }
-    let r; const snap = JSON.stringify(dataPart());
+    let r; const snap = JSON.stringify(dataPart()), ids = new Set(DB.clients.map(x => x.id));
     try{ r = iaApply(a, sel, c); }catch(e){ toast(e.message); return false; }
-    Promise.resolve(r).then(note => { m.applied[ai] = true; IAS.data.notes.push(a.titre + " : " + (note || sel.length + " élément(s)")); IAS.undo = {m, ai, snap, titre:a.titre, t:Date.now()}; iaSaveConv(); iaDraw(); toastUndo("✓ " + a.titre, iaUndoAsk); }).catch(e => toast(e.message));
+    Promise.resolve(r).then(note => { m.applied[ai] = true; IAS.data.notes.push(a.titre + " : " + (note || sel.length + " élément(s)")); IAS.undo = {m, ai, snap, titre:a.titre, t:Date.now()};
+      const nc = DB.clients.find(x => !ids.has(x.id)); if(nc && conv && conv.br){ conv.cid = nc.id; IAS.data.notes.push("[Fiche client créée : " + clientName(nc) + "]"); setTimeout(render, 0); }
+      iaSaveConv(); iaDraw(); toastUndo("✓ " + a.titre, iaUndoAsk); }).catch(e => toast(e.message));
   }}]);
 }
 function iaParse(items){
