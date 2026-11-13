@@ -4181,8 +4181,9 @@ function drivAppliquer(dv, force){
   const d = dv.driv, t = drivLine(dv); if(!d || !t || !has(d.ht)) return false;
   if(dv.signature && !force){ return false; }
   const v = String(Math.round(num(d.ht) * 100) / 100).replace(".", ",");
-  if(t.L.pu === v && !t.L.off && d.applique === d.maj) return false;
-  t.L.pu = v; t.L.off = false; t.L.qty = ""; d.ouv = t.o.id; d.applique = d.maj;
+  const off = dv.drivAff === false;
+  if(t.L.pu === v && t.L.off === off && d.applique === d.maj) return false;
+  t.L.pu = v; t.L.off = off; t.L.qty = ""; d.ouv = t.o.id; d.applique = d.maj;
   logDv(dv, "Prix des plans D-Riv 3D : " + eur(num(d.ht)));
   return true;
 }
@@ -4205,10 +4206,14 @@ function drivCard(dv){
   if(!dv.ouvrages.some(o => DRIV_ACIER.includes(o.type))) return null;
   const d = dv.driv || {}, attente = d.envoye && has(d.ht) && dv.signature && d.applique !== d.maj;
   const etat = !d.envoye ? "Pas encore envoyé. Le chantier (ouvrages, dimensions, poids, profils, schéma) part dans D-Riv 3D pour chiffrer les plans."
-    : "Envoyé le " + frDate(d.envoye.slice(0, 10)) + (has(d.ht) ? ". Prix des plans reçu : <b>" + eur(num(d.ht)) + " HT</b>" + (d.mode ? " (" + (d.mode === "tonne" ? "à la tonne" : "à l’heure") + ")" : "") + (d.maj ? ", mis à jour le " + frDate(d.maj.slice(0, 10)) + " à " + d.maj.slice(11, 16) + " (UTC)" : "") + ". Il est repris dans la ligne « " + DRIV_ETUDES + " »." : ". En attente du prix de D-Riv 3D.");
+    : "Envoyé le " + frDate(d.envoye.slice(0, 10)) + (has(d.ht) ? ". Prix des plans reçu : <b>" + eur(num(d.ht)) + " HT</b>" + (d.mode ? " (" + (d.mode === "tonne" ? "à la tonne" : "à l’heure") + ")" : "") + (d.maj ? ", mis à jour le " + frDate(d.maj.slice(0, 10)) + " à " + d.maj.slice(11, 16) + " (UTC)" : "") + ". " + (dv.drivAff === false ? "Il n’est pas compté dans ce devis." : "Il est repris dans la ligne « " + DRIV_ETUDES + " ».") : ". En attente du prix de D-Riv 3D.");
   const c = el(`<section class="card"><div class="row" style="justify-content:space-between;align-items:center;gap:8px"><div><h2 style="margin:0">Plans D-Riv 3D</h2><p class="muted small" style="margin:4px 0 0">${etat}</p>
-    ${attente ? `<p class="small" style="margin:6px 0 0">Le devis est signé : le nouveau prix n’a pas été posé tout seul.</p>` : ""}</div>
+    ${attente ? `<p class="small" style="margin:6px 0 0">Le devis est signé : le nouveau prix n’a pas été posé tout seul.</p>` : ""}
+    ${d.envoye ? `<label class="row small" style="gap:8px;margin-top:8px"><input type="checkbox" data-d="aff" style="width:auto" ${dv.drivAff === false ? "" : "checked"}> Afficher le prix des plans sur le devis</label>
+    <p class="muted small" style="margin:2px 0 0">${dv.drivAff === false ? "Décoché : le prix des plans est retiré du devis (ni affiché ni compté dans le total)." : "Coché : le client voit la ligne « " + DRIV_ETUDES + " », comptée dans le total."}</p>` : ""}</div>
     <div class="row">${attente ? `<button class="btn sm" type="button" data-d="app">Appliquer ${eur(num(d.ht))}</button>` : ""}<button class="btn sm ${d.envoye ? "" : "blue"}" type="button" data-d="send">${d.envoye ? "Renvoyer les mises à jour" : "Envoyer à D-Riv 3D"}</button></div></div></section>`);
+  c.addEventListener("change", e => { if(e.target.dataset.d !== "aff") return; dv.drivAff = e.target.checked; const t = drivLine(dv);
+    if(t && (has(d.ht) || !dv.drivAff)) t.L.off = !dv.drivAff; touch(dv); render(); });
   c.addEventListener("click", e => { const a = e.target.dataset.d;
     if(a === "send") drivEnvoyer(dv);
     if(a === "app" && drivAppliquer(dv, true)){ touch(dv); render(); toast("Prix des plans appliqué"); } });
