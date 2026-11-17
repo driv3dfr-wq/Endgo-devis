@@ -1477,13 +1477,15 @@ function catItems(g){
 function renderCatalog(main){
   const head = el(`<section class="card"><h2>Prix fourniture et pose</h2>
     <p class="muted small" style="margin:0 0 10px">Indiquez ici le prix unitaire HT de la fourniture et de la main-d’œuvre de chaque poste, avec leur unité. Les devis reprennent ces valeurs automatiquement. Sur une ligne de devis, vous pouvez toujours taper un autre prix ; le bouton « auto » revient au prix d’ici.</p>
-    <div class="row" style="margin-bottom:10px"><button class="btn" type="button" data-a="exp">Exporter la liste de prix (.json)</button><button class="btn" type="button" data-a="imp">Importer une liste de prix (PDF, photo ou .json)</button></div>
+    <div class="row" style="margin-bottom:10px"><button class="btn" type="button" data-a="exp">Exporter la liste de prix (.json)</button><button class="btn" type="button" data-a="fourn">Mes fournisseurs</button><button class="btn" type="button" data-a="dbl">Fusionner les doublons</button><button class="btn" type="button" data-a="imp">Importer une liste de prix (PDF, photo ou .json)</button></div>
     <div class="row" style="margin:0 0 10px;align-items:flex-end"><label class="f" style="width:200px"><span>Marge par défaut %</span><input id="margeDef" inputmode="decimal" class="num" value="${esc(has((DB.settings||{}).margeDef)?DB.settings.margeDef:"0")}"></label><span class="muted small" style="flex:1 1 200px">S’applique aux matériaux de toutes les lignes de tous les devis, sauf celles où vous avez écrit une marge à la main. À 0, aucune marge.</span></div>
     <input id="catSearch" type="search" placeholder="Rechercher un poste…"></section>`);
   head.addEventListener("click", e => {
     const a = e.target.dataset && e.target.dataset.a;
     if(a==="exp"){ download("endgo-prix-"+today()+".json", JSON.stringify({type:"endgo-prix", date:today(), catalog:DB.catalog, custom:DB.lib.custom}, null, 1), "application/json"); toast("Liste de prix téléchargée"); }
     if(a==="imp") $("#importPrix").click();
+    if(a==="fourn") fournListModal();
+    if(a==="dbl"){ const n = catMergeDups(); if(n){ saveNow(); render(); } toast(n ? n + " poste" + (n>1?"s":"") + " en double fusionné" + (n>1?"s":"") : "Aucun doublon de section trouvé"); }
   });
   $("#margeDef", head).addEventListener("input", e => { DB.settings = DB.settings || {}; DB.settings.margeDef = e.target.value; save(); });
   main.appendChild(head);
@@ -1551,6 +1553,50 @@ function fournModal(it){
   });
   draw();
   modal("Fournisseurs : " + it.label, box, [{label:"Fermer", onClick:() => render()}]);
+}
+/* Liste des fournisseurs (onglet Prix, devis, chantiers) et renommage partout */
+function fournAll(){
+  const m = {}, add = (n, k) => { if(!has(n)) return; n = String(n).trim(); m[n] = m[n] || {prix:0, devis:new Set()}; if(k) m[n].prix++; };
+  Object.values(DB.catalog||{}).forEach(c => { (c.fourn||[]).forEach(f => add(f.nom, true)); add(c.fournRetenu); });
+  Object.values(DB.pdfFourn||{}).forEach(n => add(n));
+  const walk = (x, dv) => { if(!x || typeof x !== "object") return; if(Array.isArray(x)) return x.forEach(y => walk(y, dv));
+    Object.entries(x).forEach(([k, v]) => { if((k==="fourn" || k==="fournRetenu") && typeof v === "string" && has(v)){ add(v); m[v.trim()].devis.add(dv.id); } else if(v && typeof v === "object") walk(v, dv); }); };
+  (DB.devis||[]).forEach(dv => { walk(dv.ouvrages, dv); walk((dv.chantier||{}).fournPdf, dv); Object.keys((dv.chantier||{}).cmd||{}).forEach(n => { add(n); m[n.trim()].devis.add(dv.id); }); });
+  return m;
+}
+function fournRename(oldN, newN){
+  newN = String(newN||"").trim(); if(!newN || newN===oldN) return;
+  Object.values(DB.catalog||{}).forEach(c => {
+    if(c.fournRetenu===oldN) c.fournRetenu = newN;
+    if(!c.fourn) return;
+    c.fourn.forEach(f => { if(f.nom===oldN) f.nom = newN; });
+    const byN = {}; c.fourn.forEach(f => { const o = byN[f.nom]; if(!o || String(f.date||"") >= String(o.date||"")) byN[f.nom] = f; }); c.fourn = Object.values(byN);
+  });
+  Object.keys(DB.pdfFourn||{}).forEach(k => { if(DB.pdfFourn[k]===oldN) DB.pdfFourn[k] = newN; });
+  const walk = x => { if(!x || typeof x !== "object") return; if(Array.isArray(x)) return x.forEach(walk);
+    Object.keys(x).forEach(k => { const v = x[k]; if((k==="fourn" || k==="fournRetenu") && typeof v === "string" && v.trim()===oldN) x[k] = newN; else if(v && typeof v === "object") walk(v); }); };
+  (DB.devis||[]).forEach(dv => {
+    walk(dv.ouvrages); walk((dv.chantier||{}).fournPdf);
+    const ch = dv.chantier;
+    if(ch && ch.cmd && has(ch.cmd[oldN])){ const nc = {}; Object.keys(ch.cmd).forEach(k => { if(k===oldN){ if(!has(ch.cmd[newN])) nc[newN] = ch.cmd[k]; } else nc[k] = ch.cmd[k]; }); ch.cmd = nc; }
+  });
+}
+function fournListModal(){
+  const box = el(`<div><p class="muted small" style="margin:0 0 8px">Tous les noms de fournisseurs utilisés dans les prix, les devis et les chantiers. Changez un nom puis touchez « Renommer » : il est remplacé partout. Donner le nom d’un fournisseur déjà présent fusionne les deux.</p><div data-fl></div></div>`);
+  const draw = () => {
+    const m = fournAll(), names = Object.keys(m).sort((a,b) => a.localeCompare(b));
+    $("[data-fl]", box).innerHTML = names.length ? names.map((n, i) => `<div class="frow" data-i="${i}"><input data-n value="${esc(n)}" aria-label="Nom du fournisseur" style="flex:1;min-width:120px"><span class="muted small">${m[n].prix} prix${m[n].devis.size ? " · " + m[n].devis.size + " devis" : ""}</span><button class="btn sm primary" type="button" data-ren>Renommer</button></div>`).join("")
+      : `<p class="muted small" style="margin:0">Aucun fournisseur pour l’instant.</p>`;
+    $$("[data-ren]", box).forEach(b => b.addEventListener("click", () => {
+      const row = b.closest("[data-i]"), oldN = names[+row.dataset.i], newN = $("[data-n]", row).value.trim();
+      if(!newN) return toast("Indiquez un nom");
+      if(newN===oldN) return toast("Nom inchangé");
+      const merge = names.includes(newN);
+      fournRename(oldN, newN); saveNow(); draw(); toast(merge ? "« " + oldN + " » fusionné avec « " + newN + " »" : "Renommé en « " + newN + " »");
+    }));
+  };
+  draw();
+  modal("Mes fournisseurs", box, [{label:"Fermer", onClick:() => render()}]);
 }
 function settingsCard(){
   const st = DB.settings = DB.settings || {};
@@ -3869,7 +3915,12 @@ async function prixOpenFile(f){
   const buf = await f.arrayBuffer();
   const dataUrl = await new Promise(res => { const r = new FileReader(); r.onload = () => res(r.result); r.readAsDataURL(new Blob([buf], {type:"application/pdf"})); });
   let res = null, err = "";
-  try{ const pages = await pdfExtract(buf); res = prixParse(pages); const fo = pdfParse(pages); res.fournisseur = (fo.fournisseur || "").replace(/\s+[-–].*$/, "").trim(); res.date = fo.date || ""; }
+  try{
+    const pages = await pdfExtract(buf); res = prixParse(pages); const fo = pdfParse(pages);
+    let fn = (fo.fournisseur || "").replace(/\s+[-–].*$/, "").trim();
+    if(!/[a-z]{3}/i.test(fn.replace(/\b(s\.?a\.?s\.?u?|sarl|eurl|sa|snc)\b/gi, ""))){ const r0 = pages[0] ? pdfRows(pages[0])[0] : null; fn = r0 && !/devis|offre|facture/i.test(r0.text) ? r0.text.replace(/\s+[-–].*$/, "").trim() : ""; }
+    res.signature = fo.signature || ""; res.fournisseur = (res.signature && (DB.pdfFourn||{})[res.signature]) || fn; res.date = fo.date || "";
+  }
   catch(e){ err = e && e.message || String(e); }
   res = res || {lignes:[]}; res.src = "simple";
   prixReview(res, {dataUrl, name:f.name, err});
@@ -4040,9 +4091,66 @@ async function prixAI(file){
   }
 }
 /* Poste du catalogue proposé pour une ligne de tarif : mémoire, puis mots-clés dans tous les groupes */
+/* Nom propre d'un profilé à partir du libellé fournisseur :
+   « TUBE CARRE ACIER EN10219 S235JRH 12,05ML 120X120X4 » -> « Tube carré 120×120×4 » (barre de 12 m notée à part) */
+function prixProfil(des){
+  const D = String(des||"").toUpperCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/\s*[×*]\s*/g, "X").replace(/(\d)\s+X\s+(\d)/g, "$1X$2");
+  const T = [[/TUBE\s+CARRE/, "Tube carré"], [/TUBE\s+RECT/, "Tube rectangulaire"], [/TUBE\s+ROND/, "Tube rond Ø"], [/CORNIERE/, "Cornière"], [/FER\s+PLAT|\bPLAT\b/, "Fer plat"],
+    [/FER\s+CARRE|CARRE\s+PLEIN/, "Fer carré plein"], [/FER\s+ROND|ROND\s+PLEIN/, "Fer rond plein Ø"], [/\bFER\s+T\b|\bTE\b/, "Fer T"]];
+  const fr = n => String(n).replace(".", ",");
+  const barre = (D.match(/\b(\d{1,2})(?:[.,]\d+)?\s*M(?:L|ETRES?)?\b/) || [])[1];
+  const pr = D.match(/\b(IPE|IPN|HEA|HEB|HEM|UPN|UPE|UAP)\s*-?\s*(\d{2,4})\b/);
+  if(pr) return {nom:pr[1] + " " + pr[2], barre};
+  const t = T.find(x => x[0].test(D)); if(!t) return null;
+  const dims = [...D.matchAll(/(\d+(?:[.,]\d+)?)\s*X\s*(\d+(?:[.,]\d+)?)(?:\s*X\s*(\d+(?:[.,]\d+)?))?/g)].pop();
+  if(!dims) return null;
+  return {nom:t[1] + (t[1].endsWith("Ø") ? "" : " ") + [dims[1], dims[2], dims[3]].filter(Boolean).map(fr).join("×"), barre};
+}
+/* Clé de section : deux libellés du même profilé (« Tube carré 40×40×2 », « TUBE CARRE ACIER 40 X 40 X 2 ») ont la même clé */
+function sectKey(label){ const pf = prixProfil(label); return pf ? pdfNorm(pf.nom) : ""; }
+/* Fusion des postes en double dans l'onglet Prix : même section dans le même groupe -> un seul poste.
+   On garde le poste du modèle (ou le premier créé), on y regroupe les prix fournisseurs et le prix le plus récent. */
+function catMergeDups(){
+  let n = 0;
+  CAT_GROUPS.forEach(([g]) => {
+    const by = {};
+    catItems(g).forEach(it => { const k = sectKey(it.label); if(k) (by[k] = by[k] || []).push(it); });
+    Object.values(by).forEach(list => {
+      const clean = prixProfil(list[0].label).nom;
+      if(list.length < 2 && list[0].label === clean) return;
+      let keep = list.find(x => !x.custom) || list.find(x => x.label === clean);
+      if(!keep){ // poste créé avec le libellé brut du fournisseur : on le renomme proprement
+        keep = {label:clean, unit:list[0].unit, custom:true, key:g + "|" + clean};
+        DB.lib.custom[g] = (DB.lib.custom[g]||[]).concat([{label:clean, unit:(DB.catalog[list[0].key]||{}).unit || list[0].unit || "ml"}]);
+        list.push(keep);
+      }
+      const K = DB.catalog[keep.key] = DB.catalog[keep.key] || {};
+      list.forEach(it => {
+        if(it === keep || !it.custom) return;
+        const C = DB.catalog[it.key] || {};
+        const fo = (K.fourn||[]).concat(C.fourn||[]), byN = {};
+        fo.forEach(f => { const o = byN[f.nom]; if(!o || String(f.date||"") >= String(o.date||"")) byN[f.nom] = f; });
+        K.fourn = Object.values(byN);
+        if(has(C.pu) && (!has(K.pu) || String(C.puDate||"") > String(K.puDate||""))){ K.pu = C.pu; K.puDate = C.puDate; K.fournRetenu = C.fournRetenu; }
+        if(!K.unit && C.unit) K.unit = C.unit; if(!has(K.mpu) && has(C.mpu)){ K.mpu = C.mpu; K.munit = C.munit; }
+        Object.values(DB.pdfMap||{}).forEach(m => { if(m.g===g && m.label===it.label) m.label = keep.label; });
+        DB.devis.forEach(dv => (dv.ouvrages||[]).forEach(o => {
+          Object.values(o.sec||{}).forEach(arr => (arr||[]).forEach(x => { if(x.tpl===it.label) x.tpl = keep.label; }));
+          if(g==="tubes") (o.tubes||[]).forEach(x => { if(has(x.sec) && x.sec.trim()===it.label) x.sec = keep.label; });
+        }));
+        DB.lib.custom[g] = (DB.lib.custom[g]||[]).filter(x => x.label!==it.label);
+        delete DB.catalog[it.key]; n++;
+      });
+    });
+  });
+  return n;
+}
 function prixSuggest(l){
+  if(/contribution|participation|plus[- ]value|frais de|[ée]co[- ]?(taxe|participation)|minimum de commande/i.test(l.designation)) return {v:"n|commun", sure:false}; // frais ponctuels : pas un prix de catalogue
   const key = pdfNorm(l.designation), mem = (DB.pdfMap||{})[key];
   if(mem && catItems(mem.g).some(x => x.label===mem.label)) return {v:"p|" + mem.g + "|" + mem.label, sure:true};
+  const sk = sectKey(l.designation);
+  if(sk) for(const [g] of CAT_GROUPS){ const it = catItems(g).find(x => sectKey(x.label)===sk); if(it) return {v:"p|" + g + "|" + it.label, sure:true}; }
   const words = key.split(" ").filter(w => w.length > 2), nums = key.match(/\d+/g) || [];
   let best = null, bs = 0;
   CAT_GROUPS.forEach(([g]) => catItems(g).forEach(it => {
@@ -4068,8 +4176,14 @@ function prixPosteHtml(){
 }
 function prixReview(r, file){
   const fmtN = v => v===null || v===undefined || v==="" ? "" : String(Math.round(num(v)*10000)/10000).replace(".", ",");
-  const L = (r.lignes||[]).map(l => { const s = prixSuggest(l); return {on:s.sure, designation:pdfNice(l.designation), ref:l.ref||"", unit:l.unit||"", pu:l.pu, poste:s.v, qty:l.qty, total:l.total, poids:l.poids, kgm:l.kgm, pkg:l.pkg, pieces:l.pieces}; });
-  const infoOf = l => [has(l.ref) ? "Réf. " + esc(l.ref) : "", has(l.qty) ? "Qté " + fmtN(l.qty) + (l.unit && l.unit!=="kg" ? " " + esc(l.unit) : "") + (l.pieces ? " (" + fmtN(l.pieces) + " pièces)" : "") : "",
+  const L = (r.lignes||[]).map(l => {
+    const pf = prixProfil(l.designation), d = pf ? pf.nom : pdfNice(l.designation), s = prixSuggest(Object.assign({}, l, {designation:d}));
+    return {on:s.sure || (!!pf && /^n\|(tubes|ossature)$/.test(s.v)), designation:d, orig:l.designation, barre:pf && pf.barre, ref:l.ref||"", unit:l.unit||"", pu:l.pu, poste:s.v, qty:l.qty, total:l.total, poids:l.poids, kgm:l.kgm, pkg:l.pkg, pieces:l.pieces};
+  });
+  // même article en plusieurs longueurs de barre : on coche le moins cher au mètre
+  const grp = {}; L.forEach(l => (grp[pdfNorm(l.designation)] = grp[pdfNorm(l.designation)] || []).push(l));
+  Object.values(grp).forEach(g => { if(g.length < 2) return; const best = g.reduce((a, b) => num(b.pu) < num(a.pu) ? b : a); g.forEach(l => { if(l !== best){ l.on = false; l.dup = true; } }); });
+  const infoOf = l => [l.orig && pdfNorm(l.orig) !== pdfNorm(l.designation) ? "« " + esc(l.orig) + " »" : "", has(l.ref) ? "Réf. " + esc(l.ref) : "", l.barre ? "barres de " + l.barre + " m" : "", l.dup ? "<span style=\"color:var(--accent)\">même article plus cher dans une autre longueur</span>" : "", has(l.qty) ? "Qté " + fmtN(l.qty) + (l.unit && l.unit!=="kg" ? " " + esc(l.unit) : "") + (l.pieces ? " (" + fmtN(l.pieces) + " pièce" + (l.pieces > 1 ? "s" : "") + ")" : "") : "",
     has(l.total) ? "montant " + eur(num(l.total)) : "", l.poids ? "poids " + fmtN(Math.round(l.poids*100)/100) + " kg" : "",
     l.kgm ? "<b>" + fmtN(Math.round(l.kgm*100)/100) + " kg/ml</b>" : "", l.pkg ? "<b>" + fmtN(Math.round(l.pkg*1000)/1000) + " €/kg</b>" : ""].filter(Boolean).join(" · ");
   const posteHtml = prixPosteHtml();
@@ -4134,11 +4248,14 @@ function prixReview(r, file){
       }
       const cat = DB.catalog[g + "|" + label] = DB.catalog[g + "|" + label] || {};
       if(!cat.unit && l.unit) cat.unit = l.unit;
-      cat.fourn = (cat.fourn||[]).filter(x => x.nom!==fourn).concat([{nom:fourn, prix:fr(l.pu), date, ref:l.ref||""}]);
+      cat.fourn = (cat.fourn||[]).filter(x => x.nom!==fourn).concat([{nom:fourn, prix:fr(l.pu), date, ref:[l.ref, l.barre ? "barre " + l.barre + " m" : ""].filter(has).join(" · ")}]);
       if(ret){ cat.pu = fr(l.pu); cat.puDate = date; cat.fournRetenu = fourn; }
       DB.pdfMap[pdfNorm(l.designation)] = {g, label};
+      if(l.orig) DB.pdfMap[pdfNorm(l.orig)] = {g, label};
       nUpd++;
     });
+    if(r.signature){ DB.pdfFourn = DB.pdfFourn || {}; DB.pdfFourn[r.signature] = fourn; }
+    catMergeDups();
     saveNow(); render();
     toast(nUpd + " prix importé" + (nUpd>1?"s":"") + " de " + fourn + (nNew ? " (" + nNew + " nouveau" + (nNew>1?"x":"") + " poste" + (nNew>1?"s":"") + ")" : ""));
   }});
@@ -5498,6 +5615,7 @@ function migrate(){
   const fill = (id, arr) => { document.getElementById(id).innerHTML = arr.map(v=>`<option value="${esc(v)}">`).join(""); };
   Object.entries(DATALISTS).forEach(([k,v]) => fill("dl-"+k, v));
   migrate();
+  try{ const nd = catMergeDups(); if(nd){ save(); setTimeout(() => toast(nd + " poste" + (nd>1?"s":"") + " en double fusionné" + (nd>1?"s":"") + " dans l’onglet Prix"), 1200); } }catch(e){}
   if(DB.ui.devisId && !curDevis()) DB.ui.devisId = null;
   if(!DB.ui.devisId && DB.devis.length) DB.ui.devisId = DB.devis[DB.devis.length-1].id;
   render();
