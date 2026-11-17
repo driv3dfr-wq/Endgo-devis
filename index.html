@@ -1477,14 +1477,15 @@ function catItems(g){
 function renderCatalog(main){
   const head = el(`<section class="card"><h2>Prix fourniture et pose</h2>
     <p class="muted small" style="margin:0 0 10px">Indiquez ici le prix unitaire HT de la fourniture et de la main-d’œuvre de chaque poste, avec leur unité. Les devis reprennent ces valeurs automatiquement. Sur une ligne de devis, vous pouvez toujours taper un autre prix ; le bouton « auto » revient au prix d’ici.</p>
-    <div class="row" style="margin-bottom:10px"><button class="btn" type="button" data-a="exp">Exporter la liste de prix (.json)</button><button class="btn" type="button" data-a="dup">Fusionner les doublons</button><button class="btn" type="button" data-a="imp">Importer une liste de prix (PDF, photo ou .json)</button></div>
+    <div class="row" style="margin-bottom:10px"><button class="btn" type="button" data-a="exp">Exporter la liste de prix (.json)</button><button class="btn" type="button" data-a="fourn">Mes fournisseurs</button><button class="btn" type="button" data-a="dbl">Fusionner les doublons</button><button class="btn" type="button" data-a="imp">Importer une liste de prix (PDF, photo ou .json)</button></div>
     <div class="row" style="margin:0 0 10px;align-items:flex-end"><label class="f" style="width:200px"><span>Marge par défaut %</span><input id="margeDef" inputmode="decimal" class="num" value="${esc(has((DB.settings||{}).margeDef)?DB.settings.margeDef:"0")}"></label><span class="muted small" style="flex:1 1 200px">S’applique aux matériaux de toutes les lignes de tous les devis, sauf celles où vous avez écrit une marge à la main. À 0, aucune marge.</span></div>
     <input id="catSearch" type="search" placeholder="Rechercher un poste…"></section>`);
   head.addEventListener("click", e => {
     const a = e.target.dataset && e.target.dataset.a;
     if(a==="exp"){ download("endgo-prix-"+today()+".json", JSON.stringify({type:"endgo-prix", date:today(), catalog:DB.catalog, custom:DB.lib.custom}, null, 1), "application/json"); toast("Liste de prix téléchargée"); }
     if(a==="imp") $("#importPrix").click();
-    if(a==="dup"){ const n = catMergeDups(); if(n){ saveNow(); render(); } toast(n ? n + " poste" + (n>1?"s":"") + " en double fusionné" + (n>1?"s":"") : "Aucun doublon de section trouvé"); }
+    if(a==="fourn") fournListModal();
+    if(a==="dbl"){ const n = catMergeDups(); if(n){ saveNow(); render(); } toast(n ? n + " poste" + (n>1?"s":"") + " en double fusionné" + (n>1?"s":"") : "Aucun doublon de section trouvé"); }
   });
   $("#margeDef", head).addEventListener("input", e => { DB.settings = DB.settings || {}; DB.settings.margeDef = e.target.value; save(); });
   main.appendChild(head);
@@ -1552,6 +1553,50 @@ function fournModal(it){
   });
   draw();
   modal("Fournisseurs : " + it.label, box, [{label:"Fermer", onClick:() => render()}]);
+}
+/* Liste des fournisseurs (onglet Prix, devis, chantiers) et renommage partout */
+function fournAll(){
+  const m = {}, add = (n, k) => { if(!has(n)) return; n = String(n).trim(); m[n] = m[n] || {prix:0, devis:new Set()}; if(k) m[n].prix++; };
+  Object.values(DB.catalog||{}).forEach(c => { (c.fourn||[]).forEach(f => add(f.nom, true)); add(c.fournRetenu); });
+  Object.values(DB.pdfFourn||{}).forEach(n => add(n));
+  const walk = (x, dv) => { if(!x || typeof x !== "object") return; if(Array.isArray(x)) return x.forEach(y => walk(y, dv));
+    Object.entries(x).forEach(([k, v]) => { if((k==="fourn" || k==="fournRetenu") && typeof v === "string" && has(v)){ add(v); m[v.trim()].devis.add(dv.id); } else if(v && typeof v === "object") walk(v, dv); }); };
+  (DB.devis||[]).forEach(dv => { walk(dv.ouvrages, dv); walk((dv.chantier||{}).fournPdf, dv); Object.keys((dv.chantier||{}).cmd||{}).forEach(n => { add(n); m[n.trim()].devis.add(dv.id); }); });
+  return m;
+}
+function fournRename(oldN, newN){
+  newN = String(newN||"").trim(); if(!newN || newN===oldN) return;
+  Object.values(DB.catalog||{}).forEach(c => {
+    if(c.fournRetenu===oldN) c.fournRetenu = newN;
+    if(!c.fourn) return;
+    c.fourn.forEach(f => { if(f.nom===oldN) f.nom = newN; });
+    const byN = {}; c.fourn.forEach(f => { const o = byN[f.nom]; if(!o || String(f.date||"") >= String(o.date||"")) byN[f.nom] = f; }); c.fourn = Object.values(byN);
+  });
+  Object.keys(DB.pdfFourn||{}).forEach(k => { if(DB.pdfFourn[k]===oldN) DB.pdfFourn[k] = newN; });
+  const walk = x => { if(!x || typeof x !== "object") return; if(Array.isArray(x)) return x.forEach(walk);
+    Object.keys(x).forEach(k => { const v = x[k]; if((k==="fourn" || k==="fournRetenu") && typeof v === "string" && v.trim()===oldN) x[k] = newN; else if(v && typeof v === "object") walk(v); }); };
+  (DB.devis||[]).forEach(dv => {
+    walk(dv.ouvrages); walk((dv.chantier||{}).fournPdf);
+    const ch = dv.chantier;
+    if(ch && ch.cmd && has(ch.cmd[oldN])){ const nc = {}; Object.keys(ch.cmd).forEach(k => { if(k===oldN){ if(!has(ch.cmd[newN])) nc[newN] = ch.cmd[k]; } else nc[k] = ch.cmd[k]; }); ch.cmd = nc; }
+  });
+}
+function fournListModal(){
+  const box = el(`<div><p class="muted small" style="margin:0 0 8px">Tous les noms de fournisseurs utilisés dans les prix, les devis et les chantiers. Changez un nom puis touchez « Renommer » : il est remplacé partout. Donner le nom d’un fournisseur déjà présent fusionne les deux.</p><div data-fl></div></div>`);
+  const draw = () => {
+    const m = fournAll(), names = Object.keys(m).sort((a,b) => a.localeCompare(b));
+    $("[data-fl]", box).innerHTML = names.length ? names.map((n, i) => `<div class="frow" data-i="${i}"><input data-n value="${esc(n)}" aria-label="Nom du fournisseur" style="flex:1;min-width:120px"><span class="muted small">${m[n].prix} prix${m[n].devis.size ? " · " + m[n].devis.size + " devis" : ""}</span><button class="btn sm primary" type="button" data-ren>Renommer</button></div>`).join("")
+      : `<p class="muted small" style="margin:0">Aucun fournisseur pour l’instant.</p>`;
+    $$("[data-ren]", box).forEach(b => b.addEventListener("click", () => {
+      const row = b.closest("[data-i]"), oldN = names[+row.dataset.i], newN = $("[data-n]", row).value.trim();
+      if(!newN) return toast("Indiquez un nom");
+      if(newN===oldN) return toast("Nom inchangé");
+      const merge = names.includes(newN);
+      fournRename(oldN, newN); saveNow(); draw(); toast(merge ? "« " + oldN + " » fusionné avec « " + newN + " »" : "Renommé en « " + newN + " »");
+    }));
+  };
+  draw();
+  modal("Mes fournisseurs", box, [{label:"Fermer", onClick:() => render()}]);
 }
 function settingsCard(){
   const st = DB.settings = DB.settings || {};
