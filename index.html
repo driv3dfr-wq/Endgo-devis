@@ -1477,13 +1477,14 @@ function catItems(g){
 function renderCatalog(main){
   const head = el(`<section class="card"><h2>Prix fourniture et pose</h2>
     <p class="muted small" style="margin:0 0 10px">Indiquez ici le prix unitaire HT de la fourniture et de la main-d’œuvre de chaque poste, avec leur unité. Les devis reprennent ces valeurs automatiquement. Sur une ligne de devis, vous pouvez toujours taper un autre prix ; le bouton « auto » revient au prix d’ici.</p>
-    <div class="row" style="margin-bottom:10px"><button class="btn" type="button" data-a="exp">Exporter la liste de prix (.json)</button><button class="btn" type="button" data-a="imp">Importer une liste de prix (PDF, photo ou .json)</button></div>
+    <div class="row" style="margin-bottom:10px"><button class="btn" type="button" data-a="exp">Exporter la liste de prix (.json)</button><button class="btn" type="button" data-a="dup">Fusionner les doublons</button><button class="btn" type="button" data-a="imp">Importer une liste de prix (PDF, photo ou .json)</button></div>
     <div class="row" style="margin:0 0 10px;align-items:flex-end"><label class="f" style="width:200px"><span>Marge par défaut %</span><input id="margeDef" inputmode="decimal" class="num" value="${esc(has((DB.settings||{}).margeDef)?DB.settings.margeDef:"0")}"></label><span class="muted small" style="flex:1 1 200px">S’applique aux matériaux de toutes les lignes de tous les devis, sauf celles où vous avez écrit une marge à la main. À 0, aucune marge.</span></div>
     <input id="catSearch" type="search" placeholder="Rechercher un poste…"></section>`);
   head.addEventListener("click", e => {
     const a = e.target.dataset && e.target.dataset.a;
     if(a==="exp"){ download("endgo-prix-"+today()+".json", JSON.stringify({type:"endgo-prix", date:today(), catalog:DB.catalog, custom:DB.lib.custom}, null, 1), "application/json"); toast("Liste de prix téléchargée"); }
     if(a==="imp") $("#importPrix").click();
+    if(a==="dup"){ const n = catMergeDups(); if(n){ saveNow(); render(); } toast(n ? n + " poste" + (n>1?"s":"") + " en double fusionné" + (n>1?"s":"") : "Aucun doublon de section trouvé"); }
   });
   $("#margeDef", head).addEventListener("input", e => { DB.settings = DB.settings || {}; DB.settings.margeDef = e.target.value; save(); });
   main.appendChild(head);
@@ -4048,7 +4049,7 @@ async function prixAI(file){
 /* Nom propre d'un profilé à partir du libellé fournisseur :
    « TUBE CARRE ACIER EN10219 S235JRH 12,05ML 120X120X4 » -> « Tube carré 120×120×4 » (barre de 12 m notée à part) */
 function prixProfil(des){
-  const D = String(des||"").toUpperCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+  const D = String(des||"").toUpperCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/\s*[×*]\s*/g, "X").replace(/(\d)\s+X\s+(\d)/g, "$1X$2");
   const T = [[/TUBE\s+CARRE/, "Tube carré"], [/TUBE\s+RECT/, "Tube rectangulaire"], [/TUBE\s+ROND/, "Tube rond Ø"], [/CORNIERE/, "Cornière"], [/FER\s+PLAT|\bPLAT\b/, "Fer plat"],
     [/FER\s+CARRE|CARRE\s+PLEIN/, "Fer carré plein"], [/FER\s+ROND|ROND\s+PLEIN/, "Fer rond plein Ø"], [/\bFER\s+T\b|\bTE\b/, "Fer T"]];
   const fr = n => String(n).replace(".", ",");
@@ -4060,10 +4061,51 @@ function prixProfil(des){
   if(!dims) return null;
   return {nom:t[1] + (t[1].endsWith("Ø") ? "" : " ") + [dims[1], dims[2], dims[3]].filter(Boolean).map(fr).join("×"), barre};
 }
+/* Clé de section : deux libellés du même profilé (« Tube carré 40×40×2 », « TUBE CARRE ACIER 40 X 40 X 2 ») ont la même clé */
+function sectKey(label){ const pf = prixProfil(label); return pf ? pdfNorm(pf.nom) : ""; }
+/* Fusion des postes en double dans l'onglet Prix : même section dans le même groupe -> un seul poste.
+   On garde le poste du modèle (ou le premier créé), on y regroupe les prix fournisseurs et le prix le plus récent. */
+function catMergeDups(){
+  let n = 0;
+  CAT_GROUPS.forEach(([g]) => {
+    const by = {};
+    catItems(g).forEach(it => { const k = sectKey(it.label); if(k) (by[k] = by[k] || []).push(it); });
+    Object.values(by).forEach(list => {
+      const clean = prixProfil(list[0].label).nom;
+      if(list.length < 2 && list[0].label === clean) return;
+      let keep = list.find(x => !x.custom) || list.find(x => x.label === clean);
+      if(!keep){ // poste créé avec le libellé brut du fournisseur : on le renomme proprement
+        keep = {label:clean, unit:list[0].unit, custom:true, key:g + "|" + clean};
+        DB.lib.custom[g] = (DB.lib.custom[g]||[]).concat([{label:clean, unit:(DB.catalog[list[0].key]||{}).unit || list[0].unit || "ml"}]);
+        list.push(keep);
+      }
+      const K = DB.catalog[keep.key] = DB.catalog[keep.key] || {};
+      list.forEach(it => {
+        if(it === keep || !it.custom) return;
+        const C = DB.catalog[it.key] || {};
+        const fo = (K.fourn||[]).concat(C.fourn||[]), byN = {};
+        fo.forEach(f => { const o = byN[f.nom]; if(!o || String(f.date||"") >= String(o.date||"")) byN[f.nom] = f; });
+        K.fourn = Object.values(byN);
+        if(has(C.pu) && (!has(K.pu) || String(C.puDate||"") > String(K.puDate||""))){ K.pu = C.pu; K.puDate = C.puDate; K.fournRetenu = C.fournRetenu; }
+        if(!K.unit && C.unit) K.unit = C.unit; if(!has(K.mpu) && has(C.mpu)){ K.mpu = C.mpu; K.munit = C.munit; }
+        Object.values(DB.pdfMap||{}).forEach(m => { if(m.g===g && m.label===it.label) m.label = keep.label; });
+        DB.devis.forEach(dv => (dv.ouvrages||[]).forEach(o => {
+          Object.values(o.sec||{}).forEach(arr => (arr||[]).forEach(x => { if(x.tpl===it.label) x.tpl = keep.label; }));
+          if(g==="tubes") (o.tubes||[]).forEach(x => { if(has(x.sec) && x.sec.trim()===it.label) x.sec = keep.label; });
+        }));
+        DB.lib.custom[g] = (DB.lib.custom[g]||[]).filter(x => x.label!==it.label);
+        delete DB.catalog[it.key]; n++;
+      });
+    });
+  });
+  return n;
+}
 function prixSuggest(l){
   if(/contribution|participation|plus[- ]value|frais de|[ée]co[- ]?(taxe|participation)|minimum de commande/i.test(l.designation)) return {v:"n|commun", sure:false}; // frais ponctuels : pas un prix de catalogue
   const key = pdfNorm(l.designation), mem = (DB.pdfMap||{})[key];
   if(mem && catItems(mem.g).some(x => x.label===mem.label)) return {v:"p|" + mem.g + "|" + mem.label, sure:true};
+  const sk = sectKey(l.designation);
+  if(sk) for(const [g] of CAT_GROUPS){ const it = catItems(g).find(x => sectKey(x.label)===sk); if(it) return {v:"p|" + g + "|" + it.label, sure:true}; }
   const words = key.split(" ").filter(w => w.length > 2), nums = key.match(/\d+/g) || [];
   let best = null, bs = 0;
   CAT_GROUPS.forEach(([g]) => catItems(g).forEach(it => {
@@ -4168,6 +4210,7 @@ function prixReview(r, file){
       nUpd++;
     });
     if(r.signature){ DB.pdfFourn = DB.pdfFourn || {}; DB.pdfFourn[r.signature] = fourn; }
+    catMergeDups();
     saveNow(); render();
     toast(nUpd + " prix importé" + (nUpd>1?"s":"") + " de " + fourn + (nNew ? " (" + nNew + " nouveau" + (nNew>1?"x":"") + " poste" + (nNew>1?"s":"") + ")" : ""));
   }});
@@ -5527,6 +5570,7 @@ function migrate(){
   const fill = (id, arr) => { document.getElementById(id).innerHTML = arr.map(v=>`<option value="${esc(v)}">`).join(""); };
   Object.entries(DATALISTS).forEach(([k,v]) => fill("dl-"+k, v));
   migrate();
+  try{ const nd = catMergeDups(); if(nd){ save(); setTimeout(() => toast(nd + " poste" + (nd>1?"s":"") + " en double fusionné" + (nd>1?"s":"") + " dans l’onglet Prix"), 1200); } }catch(e){}
   if(DB.ui.devisId && !curDevis()) DB.ui.devisId = null;
   if(!DB.ui.devisId && DB.devis.length) DB.ui.devisId = DB.devis[DB.devis.length-1].id;
   render();
