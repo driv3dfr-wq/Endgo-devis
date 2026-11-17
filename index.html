@@ -3875,7 +3875,89 @@ async function prixOpenFile(f){
   prixReview(res, {dataUrl, name:f.name, err});
 }
 /* Lecture simple d'un tarif : sur chaque ligne du PDF, le dernier montant est le prix, le texte à gauche la désignation */
+/* Unités écrites en toutes lettres dans les tarifs et devis fournisseurs */
+function prixUnit(w){
+  if(/^m[²2]$/i.test(String(w).trim())) return "m²";
+  const t = pdfNorm(w).replace(/ /g,"");
+  return ({metre:"ml",metres:"ml",ml:"ml",m:"ml",mlin:"ml",m2:"m²",metrecarre:"m²",metrescarres:"m²",kg:"kg",kilo:"kg",kilos:"kg",kilogramme:"kg",tonne:"t",tonnes:"t",t:"t",
+    piece:"u",pieces:"u",pce:"u",pcs:"u",pc:"u",u:"u",un:"u",unite:"u",unites:"u",barre:"u",barres:"u",ens:"forfait",ft:"forfait",forfait:"forfait",h:"h",heure:"h",heures:"h",jour:"jour",jours:"jour"})[t] || "";
+}
+/* Lecture par colonnes : on repère l'en-tête du tableau (Article / Désignation, Qté, Prix unitaire, Unité, Montant)
+   et chaque morceau de texte est rangé dans la colonne placée au-dessus de lui. Les lignes sans prix qui suivent un article
+   le complètent : suite de la désignation (ex. 120X120X4), poids, nombre de pièces. */
+function prixParseCols(pages){
+  const out = []; let H = null, cur = null;
+  const isHead = r => /(d[ée]signation|article|libell[ée]|description)/i.test(r.text) && /(prix|p\.?\s?u\b|tarif)/i.test(r.text);
+  const colOf = name => {
+    if(/r[ée]f|code/i.test(name)) return "ref";
+    if(/d[ée]signation|article|libell|description/i.test(name)) return "des";
+    if(/qt|quantit/i.test(name)) return "qty";
+    if(/mt|montant|total/i.test(name)) return "tot";
+    if(/tva/i.test(name)) return "tva";
+    if(/remise|rem\.?$/i.test(name)) return "rem";
+    if(/prix|p\.?\s?u\b|tarif/i.test(name)) return "pu";
+    if(/^uv$|unit[ée]\s*(de\s*)?(vente|prix)|^unit[ée]s?$|^u\.?$/i.test(name)) return "unit";
+    if(/up|uc|conditionn/i.test(name)) return "uq";
+    return "x";
+  };
+  pages.forEach(pg => pdfRows(pg).forEach(r => {
+    if(isHead(r)){
+      const cols = r.segs.map(sg => ({k:colOf(sg.s), x:sg.x, cx:sg.x + sg.w/2, w:sg.w}));
+      if(cols.some(c => c.k==="pu") && cols.some(c => c.k==="des")){
+        const di = cols.findIndex(c => c.k==="des"), nx = cols[di+1];
+        H = {cols, desX:cols[di].x, desEnd:nx ? nx.x - 4 : 1e9}; cur = null; return;
+      }
+    }
+    if(!H) return;
+    const txt = r.text.trim();
+    if(/^(sous[- ]?total|total|net [àa] payer|montant total|base ht|report|tva\b)/i.test(txt)){ cur = null; return; }
+    const cell = {}, left = [];
+    r.segs.forEach(sg => {
+      if(sg.x + sg.w/2 < H.desEnd){ left.push(sg); return; }
+      // un morceau peut regrouper plusieurs colonnes (« 132,55 METRE », « 20,00% 2 131,40 ») : découpage en mots, position estimée
+      const re = /-?\d{1,3}(?:[ \u00a0\u202f]\d{3})+(?:[.,]\d+)?%?|\S+/g, L = sg.s.length || 1; let m;
+      while((m = re.exec(sg.s))){
+        const x0 = sg.x + sg.w*m.index/L, x1 = sg.x + sg.w*(m.index + m[0].length)/L, cx = (x0 + x1)/2;
+        let best = null, bd = 1e9;
+        H.cols.forEach(c => { if(c.x + c.w/2 < H.desEnd) return; const d = Math.min(Math.abs(cx - c.cx), Math.abs(x1 - (c.x + c.w)), Math.abs(x0 - c.x)); if(d < bd){ bd = d; best = c; } });
+        if(best) cell[best.k] = (cell[best.k] ? cell[best.k] + " " : "") + m[0];
+      }
+    });
+    // colonne référence : morceaux à gauche de la colonne désignation
+    let ref = "";
+    const desSegs = left.filter(sg => { if(sg.x + sg.w <= H.desX + 2 && !/[a-z]{3}/.test(sg.s)){ ref += (ref?" ":"") + sg.s.replace(/^\*\s*/,""); return false; } return true; });
+    const des = desSegs.map(sg => sg.s).join(" ").replace(/\s+/g," ").trim();
+    const numIn = (k, last) => { if(!cell[k]) return null; const ns = (cell[k].replace(/€/g,"").match(/-?\d{1,3}(?:[ \u00a0\u202f]\d{3})+(?:[.,]\d+)?%?|-?\d+(?:[.,]\d+)?%?/g) || []).filter(t => !/%$/.test(t)).map(pdfNum).filter(v => v!==null); return ns.length ? ns[last ? ns.length-1 : 0] : null; };
+    const unitIn = k => { if(!cell[k]) return ""; for(const w of cell[k].replace(/[\d.,%]+/g," ").trim().split(/\s+/)){ const u = prixUnit(w); if(u) return u; } return ""; };
+    const pu = numIn("pu");
+    if(pu !== null && pu > 0 && des){
+      const qty = numIn("qty") ?? numIn("uq"), tot = numIn("tot", true);
+      let unit = unitIn("unit") || unitIn("uq") || unitIn("qty") || unitIn("pu");
+      cur = {designation:des, ref:ref.trim(), unit, pu, qty, total:tot, qtyUnit:unitIn("uq") || unitIn("qty") || unit, lines:0};
+      out.push(cur); return;
+    }
+    if(!cur) return;
+    // ligne de complément de l'article en cours (montant ou quantité décalés d'une ligne, poids, pièces, suite de la désignation)
+    if(cur.total === null){ const t = numIn("tot", true); if(t !== null && !des){ cur.total = t; return; } }
+    const pm = txt.match(/poids[^\d]*([\d\s.,]+)\s*(kg|t)\b/i);
+    if(pm){ const v = pdfNum(pm[1].trim()); if(v) cur.poids = /t/i.test(pm[2]) ? v*1000 : v; return; }
+    const q2 = numIn("qty") ?? numIn("uq"), u2 = unitIn("uq") || unitIn("qty");
+    if(q2 !== null && u2 === "u" && !cur.pieces) cur.pieces = q2;
+    if(des && cur.lines < 2 && des.length < 50 && !/:/.test(des) && /^[^a-z]*$/.test(des) && /\d|[A-Z]{3}/.test(des)){ cur.designation += " " + des; cur.lines++; return; }
+    if(des) cur.lines = 9; // texte libre (séquentiel, délai, commentaire) : fin de la désignation
+  }));
+  out.forEach(l => {
+    if(l.unit === "t"){ l.unit = "kg"; l.pu = l.pu / 1000; }
+    if(!l.unit && l.qtyUnit) l.unit = l.qtyUnit === "t" ? "kg" : l.qtyUnit;
+    if(l.poids && l.qty && l.qtyUnit === "ml") l.kgm = l.poids / l.qty;
+    if(l.poids && l.total) l.pkg = l.total / l.poids;
+    else if(l.poids && l.qty) l.pkg = l.qty * l.pu / l.poids;
+  });
+  return out;
+}
 function prixParse(pages){
+  const cols = prixParseCols(pages);
+  if(cols.length) return {lignes:cols, cols:true};
   const out = [], seen = new Set();
   const skip = /^(sous[- ]?total|total|tva|net [àa] payer|page \d|tarif|prix|d[ée]signation|r[ée]f[ée]rence|article|conditions|siret|rcs|iban|t[ée]l|fax|mail|www\.)/i;
   pages.forEach(pg => pdfRows(pg).forEach(r => {
@@ -3965,7 +4047,7 @@ function prixSuggest(l){
   let best = null, bs = 0;
   CAT_GROUPS.forEach(([g]) => catItems(g).forEach(it => {
     const nl = pdfNorm(it.label), lw = nl.split(" ").filter(w => w.length > 2); if(!lw.length || !words.length) return;
-    if(String(nl.match(/\d+/g) || "") !== String(nums.length ? nums : "") && nl.match(/\d+/g)) return; // dimensions différentes : autre article
+    if((nl.match(/\d+/g) || []).some(n => !nums.includes(n))) return; // dimensions différentes : autre article
     const s = lw.filter(w => words.includes(w)).length / Math.max(lw.length, words.length);
     if(s > bs){ bs = s; best = "p|" + g + "|" + it.label; }
   }));
@@ -3986,7 +4068,10 @@ function prixPosteHtml(){
 }
 function prixReview(r, file){
   const fmtN = v => v===null || v===undefined || v==="" ? "" : String(Math.round(num(v)*10000)/10000).replace(".", ",");
-  const L = (r.lignes||[]).map(l => { const s = prixSuggest(l); return {on:s.sure, designation:pdfNice(l.designation), ref:l.ref||"", unit:l.unit||"", pu:l.pu, poste:s.v}; });
+  const L = (r.lignes||[]).map(l => { const s = prixSuggest(l); return {on:s.sure, designation:pdfNice(l.designation), ref:l.ref||"", unit:l.unit||"", pu:l.pu, poste:s.v, qty:l.qty, total:l.total, poids:l.poids, kgm:l.kgm, pkg:l.pkg, pieces:l.pieces}; });
+  const infoOf = l => [has(l.ref) ? "Réf. " + esc(l.ref) : "", has(l.qty) ? "Qté " + fmtN(l.qty) + (l.unit && l.unit!=="kg" ? " " + esc(l.unit) : "") + (l.pieces ? " (" + fmtN(l.pieces) + " pièces)" : "") : "",
+    has(l.total) ? "montant " + eur(num(l.total)) : "", l.poids ? "poids " + fmtN(Math.round(l.poids*100)/100) + " kg" : "",
+    l.kgm ? "<b>" + fmtN(Math.round(l.kgm*100)/100) + " kg/ml</b>" : "", l.pkg ? "<b>" + fmtN(Math.round(l.pkg*1000)/1000) + " €/kg</b>" : ""].filter(Boolean).join(" · ");
   const posteHtml = prixPosteHtml();
   const box = el(`<div class="pdfrev prixrev">
     ${file.err ? `<p class="small" style="color:var(--danger);margin:0">Lecture simple impossible : ${esc(file.err)}</p>` : ""}
@@ -4006,10 +4091,16 @@ function prixReview(r, file){
   const drawSum = () => { const n = L.filter(l => l.on).length, nn = L.filter(l => l.on && l.poste[0]==="n").length; $("[data-sum]", box).innerHTML = `<b>${n}</b> ligne${n>1?"s":""} cochée${n>1?"s":""} sur ${L.length}` + (nn ? ` · dont ${nn} nouveau${nn>1?"x":""} poste${nn>1?"s":""}` : ""); };
   L.forEach((l, i) => {
     const row = el(`<div class="pdfl${l.on?"":" off"}" data-i="${i}">
-      <div class="row" style="flex-wrap:nowrap;align-items:flex-start"><input type="checkbox" data-k="on" ${l.on?"checked":""} aria-label="Importer ce prix"><textarea data-k="designation" rows="1" style="flex:1">${esc(l.designation)}</textarea></div>
+      <div class="row" style="flex-wrap:nowrap;align-items:flex-start"><input type="checkbox" data-k="on" ${l.on?"checked":""} aria-label="Importer ce prix"><textarea data-k="designation" rows="2" style="flex:1">${esc(l.designation)}</textarea></div>
       <div class="pdfg"><label class="f"><span>Unité</span><select data-k="unit"><option value="">?</option>${opts(UNITS, l.unit)}</select></label>
       <label class="f"><span>Prix HT €</span><input data-k="pu" inputmode="decimal" class="num" value="${esc(fmtN(l.pu))}"></label>
-      <label class="f" style="grid-column:span 2"><span>Poste du catalogue</span><select data-k="poste">${posteHtml}</select></label></div></div>`);
+      <label class="f" style="grid-column:span 2"><span>Poste du catalogue</span><select data-k="poste">${posteHtml}</select></label></div>
+      ${infoOf(l) ? `<div class="row" style="gap:6px;align-items:center"><span class="muted small" style="flex:1">${infoOf(l)}</span>${l.pkg && l.unit!=="kg" ? `<button class="btn sm" type="button" data-tokg>Prendre le prix au kg</button>` : ""}</div>` : ""}</div>`);
+    const kgb = $("[data-tokg]", row);
+    if(kgb) kgb.addEventListener("click", () => {
+      l.unit = "kg"; l.pu = Math.round(l.pkg*10000)/10000; $("[data-k=unit]", row).value = "kg"; $("[data-k=pu]", row).value = fmtN(l.pu);
+      kgb.remove(); toast("Prix passé en €/kg : " + fmtN(l.pu) + " €/kg");
+    });
     $("[data-k=poste]", row).value = l.poste; $("[data-k=unit]", row).value = l.unit;
     $$("[data-k]", row).forEach(inp => inp.addEventListener(inp.type==="checkbox" || inp.tagName==="SELECT" ? "change" : "input", () => {
       const k = inp.dataset.k; l[k] = inp.type==="checkbox" ? inp.checked : inp.value;
