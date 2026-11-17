@@ -3869,7 +3869,12 @@ async function prixOpenFile(f){
   const buf = await f.arrayBuffer();
   const dataUrl = await new Promise(res => { const r = new FileReader(); r.onload = () => res(r.result); r.readAsDataURL(new Blob([buf], {type:"application/pdf"})); });
   let res = null, err = "";
-  try{ const pages = await pdfExtract(buf); res = prixParse(pages); const fo = pdfParse(pages); res.fournisseur = (fo.fournisseur || "").replace(/\s+[-–].*$/, "").trim(); res.date = fo.date || ""; }
+  try{
+    const pages = await pdfExtract(buf); res = prixParse(pages); const fo = pdfParse(pages);
+    let fn = (fo.fournisseur || "").replace(/\s+[-–].*$/, "").trim();
+    if(!/[a-z]{3}/i.test(fn.replace(/\b(s\.?a\.?s\.?u?|sarl|eurl|sa|snc)\b/gi, ""))){ const r0 = pages[0] ? pdfRows(pages[0])[0] : null; fn = r0 && !/devis|offre|facture/i.test(r0.text) ? r0.text.replace(/\s+[-–].*$/, "").trim() : ""; }
+    res.signature = fo.signature || ""; res.fournisseur = (res.signature && (DB.pdfFourn||{})[res.signature]) || fn; res.date = fo.date || "";
+  }
   catch(e){ err = e && e.message || String(e); }
   res = res || {lignes:[]}; res.src = "simple";
   prixReview(res, {dataUrl, name:f.name, err});
@@ -4040,7 +4045,23 @@ async function prixAI(file){
   }
 }
 /* Poste du catalogue proposé pour une ligne de tarif : mémoire, puis mots-clés dans tous les groupes */
+/* Nom propre d'un profilé à partir du libellé fournisseur :
+   « TUBE CARRE ACIER EN10219 S235JRH 12,05ML 120X120X4 » -> « Tube carré 120×120×4 » (barre de 12 m notée à part) */
+function prixProfil(des){
+  const D = String(des||"").toUpperCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+  const T = [[/TUBE\s+CARRE/, "Tube carré"], [/TUBE\s+RECT/, "Tube rectangulaire"], [/TUBE\s+ROND/, "Tube rond Ø"], [/CORNIERE/, "Cornière"], [/FER\s+PLAT|\bPLAT\b/, "Fer plat"],
+    [/FER\s+CARRE|CARRE\s+PLEIN/, "Fer carré plein"], [/FER\s+ROND|ROND\s+PLEIN/, "Fer rond plein Ø"], [/\bFER\s+T\b|\bTE\b/, "Fer T"]];
+  const fr = n => String(n).replace(".", ",");
+  const barre = (D.match(/\b(\d{1,2})(?:[.,]\d+)?\s*M(?:L|ETRES?)?\b/) || [])[1];
+  const pr = D.match(/\b(IPE|IPN|HEA|HEB|HEM|UPN|UPE|UAP)\s*-?\s*(\d{2,4})\b/);
+  if(pr) return {nom:pr[1] + " " + pr[2], barre};
+  const t = T.find(x => x[0].test(D)); if(!t) return null;
+  const dims = [...D.matchAll(/(\d+(?:[.,]\d+)?)\s*X\s*(\d+(?:[.,]\d+)?)(?:\s*X\s*(\d+(?:[.,]\d+)?))?/g)].pop();
+  if(!dims) return null;
+  return {nom:t[1] + (t[1].endsWith("Ø") ? "" : " ") + [dims[1], dims[2], dims[3]].filter(Boolean).map(fr).join("×"), barre};
+}
 function prixSuggest(l){
+  if(/contribution|participation|plus[- ]value|frais de|[ée]co[- ]?(taxe|participation)|minimum de commande/i.test(l.designation)) return {v:"n|commun", sure:false}; // frais ponctuels : pas un prix de catalogue
   const key = pdfNorm(l.designation), mem = (DB.pdfMap||{})[key];
   if(mem && catItems(mem.g).some(x => x.label===mem.label)) return {v:"p|" + mem.g + "|" + mem.label, sure:true};
   const words = key.split(" ").filter(w => w.length > 2), nums = key.match(/\d+/g) || [];
@@ -4068,8 +4089,14 @@ function prixPosteHtml(){
 }
 function prixReview(r, file){
   const fmtN = v => v===null || v===undefined || v==="" ? "" : String(Math.round(num(v)*10000)/10000).replace(".", ",");
-  const L = (r.lignes||[]).map(l => { const s = prixSuggest(l); return {on:s.sure, designation:pdfNice(l.designation), ref:l.ref||"", unit:l.unit||"", pu:l.pu, poste:s.v, qty:l.qty, total:l.total, poids:l.poids, kgm:l.kgm, pkg:l.pkg, pieces:l.pieces}; });
-  const infoOf = l => [has(l.ref) ? "Réf. " + esc(l.ref) : "", has(l.qty) ? "Qté " + fmtN(l.qty) + (l.unit && l.unit!=="kg" ? " " + esc(l.unit) : "") + (l.pieces ? " (" + fmtN(l.pieces) + " pièces)" : "") : "",
+  const L = (r.lignes||[]).map(l => {
+    const pf = prixProfil(l.designation), d = pf ? pf.nom : pdfNice(l.designation), s = prixSuggest(Object.assign({}, l, {designation:d}));
+    return {on:s.sure || (!!pf && /^n\|(tubes|ossature)$/.test(s.v)), designation:d, orig:l.designation, barre:pf && pf.barre, ref:l.ref||"", unit:l.unit||"", pu:l.pu, poste:s.v, qty:l.qty, total:l.total, poids:l.poids, kgm:l.kgm, pkg:l.pkg, pieces:l.pieces};
+  });
+  // même article en plusieurs longueurs de barre : on coche le moins cher au mètre
+  const grp = {}; L.forEach(l => (grp[pdfNorm(l.designation)] = grp[pdfNorm(l.designation)] || []).push(l));
+  Object.values(grp).forEach(g => { if(g.length < 2) return; const best = g.reduce((a, b) => num(b.pu) < num(a.pu) ? b : a); g.forEach(l => { if(l !== best){ l.on = false; l.dup = true; } }); });
+  const infoOf = l => [l.orig && pdfNorm(l.orig) !== pdfNorm(l.designation) ? "« " + esc(l.orig) + " »" : "", has(l.ref) ? "Réf. " + esc(l.ref) : "", l.barre ? "barres de " + l.barre + " m" : "", l.dup ? "<span style=\"color:var(--accent)\">même article plus cher dans une autre longueur</span>" : "", has(l.qty) ? "Qté " + fmtN(l.qty) + (l.unit && l.unit!=="kg" ? " " + esc(l.unit) : "") + (l.pieces ? " (" + fmtN(l.pieces) + " pièce" + (l.pieces > 1 ? "s" : "") + ")" : "") : "",
     has(l.total) ? "montant " + eur(num(l.total)) : "", l.poids ? "poids " + fmtN(Math.round(l.poids*100)/100) + " kg" : "",
     l.kgm ? "<b>" + fmtN(Math.round(l.kgm*100)/100) + " kg/ml</b>" : "", l.pkg ? "<b>" + fmtN(Math.round(l.pkg*1000)/1000) + " €/kg</b>" : ""].filter(Boolean).join(" · ");
   const posteHtml = prixPosteHtml();
@@ -4134,11 +4161,13 @@ function prixReview(r, file){
       }
       const cat = DB.catalog[g + "|" + label] = DB.catalog[g + "|" + label] || {};
       if(!cat.unit && l.unit) cat.unit = l.unit;
-      cat.fourn = (cat.fourn||[]).filter(x => x.nom!==fourn).concat([{nom:fourn, prix:fr(l.pu), date, ref:l.ref||""}]);
+      cat.fourn = (cat.fourn||[]).filter(x => x.nom!==fourn).concat([{nom:fourn, prix:fr(l.pu), date, ref:[l.ref, l.barre ? "barre " + l.barre + " m" : ""].filter(has).join(" · ")}]);
       if(ret){ cat.pu = fr(l.pu); cat.puDate = date; cat.fournRetenu = fourn; }
       DB.pdfMap[pdfNorm(l.designation)] = {g, label};
+      if(l.orig) DB.pdfMap[pdfNorm(l.orig)] = {g, label};
       nUpd++;
     });
+    if(r.signature){ DB.pdfFourn = DB.pdfFourn || {}; DB.pdfFourn[r.signature] = fourn; }
     saveNow(); render();
     toast(nUpd + " prix importé" + (nUpd>1?"s":"") + " de " + fourn + (nNew ? " (" + nNew + " nouveau" + (nNew>1?"x":"") + " poste" + (nNew>1?"s":"") + ")" : ""));
   }});
